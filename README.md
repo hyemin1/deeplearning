@@ -1,2 +1,2 @@
 # deeplearning
-problem solving for deep learning course for sommer semester 2021 at FAU
+problem solving for deep learning course, sommer semester 2021, FAU
