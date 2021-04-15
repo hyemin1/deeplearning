@@ -25,6 +25,20 @@ class Circle:
         plt.imshow(self.output, cmap='gray')
         plt.show()
 
-#c = Circle(1024, 200, (512, 256))
-#c.draw()
-#c.show()
+class Checker:
+    def __init__(self, resolution, tile_size):
+        self.resolution = resolution
+        self.tile_size = tile_size
+
+    def draw(self):
+        if (self.resolution % (2 * self.tile_size)):
+            print('Error: self.resolution % (2 * self.tile_size) must be an integer')
+            return False
+        concatenated_array = np.concatenate((np.zeros(self.tile_size),np.ones(self.tile_size)))
+        pattern = np.pad(concatenated_array,int((self.resolution**2)/2-self.tile_size),'wrap').reshape((self.resolution,self.resolution))
+        self.output = (pattern+pattern.T==1).astype(int)
+        return self.output
+
+    def show(self):
+        plt.imshow(self.output, cmap = "gray")
+        plt.show()
