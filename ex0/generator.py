@@ -120,7 +120,20 @@ class ImageGenerator:
         # this function takes a single image as an input and performs a random transformation
         # (mirroring and/or rotation) on it and outputs the transformed image
         #TODO: implement augmentation function
-
+        action = np.random(0,3)
+        #rotation
+        if action==0:
+            degree = random.choice([90, 80, 270])
+            skimage.transform.rotate(img, degree)
+        #mirror
+        elif action==1:
+            img = np.flip(img, axis=0)
+        #mirroring and rotation
+        else:
+            degree = random.choice([90, 80, 270])
+            skimage.transform.rotate(img, degree)
+            img = np.flip(img, axis=0)
+        
         return img
 
     def class_name(self, x):
@@ -133,3 +146,4 @@ class ImageGenerator:
         # In order to verify that the generator creates batches as required, this functions calls next to get a
         # batch of images and labels and visualizes it.
         #TODO: implement show method
+
