@@ -78,11 +78,18 @@ class ImageGenerator:
                 degree = random.choice([90,80,270])
                 skimage.transform.rotate(current_img,degree)
 
+            #mirror images
+            if self.mirroring==True:
+                current_img = np.flip(current_img,axis=0)
+
             #append to temporal arrays
             temp_batch.append(current_img)
             temp_label.append(current_label)
             #if the length of temporal array is same as given batch size
             if(len(temp_batch)==self.batch_size):
+                #shuffle
+                if self.shuffle==True:
+                    np.random.shuffle(temp_batch)
                 #append to total batch and labels array
                 self.total_batch.append(temp_batch)
                 self.total_labels.append(temp_label)
@@ -92,9 +99,13 @@ class ImageGenerator:
          #end of loop
 
         if(len(self.all_images)%2!=0):
+            #create the last batch
             for i in range(0,len(self.all_images)%self.batch_size):
                 self.total_batch[-1].append(self.all_images[i])
                 self.total_batch[-1].append(self.all_labels[i+1])
+            #shuffle the last batch
+            if self.shuffle==True:
+                np.random.shuffle(temp_batch)
         #resize all images according to the given image size
         self.total_batch=skimage.transform.resize(self.total_batch,self.image_size,self.image_size)
         #return first batch of images and labels
@@ -122,4 +133,3 @@ class ImageGenerator:
         # In order to verify that the generator creates batches as required, this functions calls next to get a
         # batch of images and labels and visualizes it.
         #TODO: implement show method
-
