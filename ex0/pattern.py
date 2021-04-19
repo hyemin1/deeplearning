@@ -17,8 +17,9 @@ class Circle:
         self.distance_sqaure = (X_coordinate-self.x)**2 +(Y_coordinate-self.y)**2
         #set boolean value: if the point is inside of the circle or not
         #circle equation: x**2 + y**2 = r**2
-        self.output = (self.distance_sqaure<=(self.radius**2))
-        return self.output
+        result = (self.distance_sqaure<=(self.radius**2))
+        self.output=np.copy(result)
+        return result
 
     def show(self):
         #plot the circle with the output array
@@ -62,8 +63,9 @@ class Checker:
         reshuffled_array = (square_reshaped_array+square_reshaped_array.T == 1)
 
         # Finally converting the types of variables into integer format in order to plottable via Matplotlib and assigning it to output variable
-        self.output = reshuffled_array.astype(int)
-        return self.output
+        result = reshuffled_array.astype(int)
+        self.output= np.copy(result)
+        return result
 
     def show(self):
         #Showing the output via matplotlib
