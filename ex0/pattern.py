@@ -78,29 +78,29 @@ class Spectrum:
         self.resolution = resolution
 
     def draw(self):
-        #Creating an array where the number of elements is equal to resolution. The array range from 0 to number of resolution.
-        rgbRangeArray = np.arange(0, self.resolution)
+        #create a 1-D array with intensity of 0 to 1
+        rgb_1 = np.linspace(0.0, 1.0, num=self.resolution**2)
+        #reshape the 1-D array to 2-D array
+        rgb_1=rgb_1.reshape((self.resolution,self.resolution))
+        #create a 1-D array with intensity from 1 to 0
+        rgb_2=np.linspace(1.0,0.0,num=self.resolution**2)
+        #reshape the 1-D array to 2-D array
+        rgb_2=rgb_2.reshape((self.resolution,self.resolution))
+        #create a 3-D array for RGB spectrum
+        rgb_final = np.zeros((self.resolution, self.resolution, 3))
 
-        #Crearing an array with ones. The number of elements in the array is equal to the resolution.
-        onesArray = np.ones(self.resolution, dtype=np.uint8)
+        #red channel
+        rgb_final[:, :, 0] = rgb_1.T
+        #green channel
+        rgb_final[:, :, 1] = rgb_1
+        #blue channel
+        rgb_final[:, :, 2] = rgb_2.T
 
-        #Now we arae multiplying this two array with np.outer function
-        multipliedArray = np.outer(rgbRangeArray, onesArray)
-
-        #We are creating an three dimentional array with the values of resolution
-        zeroRgbArray = np.zeros((self.resolution, self.resolution, 3), dtype=np.uint8)
-
-        #Changing the value of the first row with multiplied array
-        zeroRgbArray[:, :, 0] = multipliedArray
-
-        #Changing the value of the second row with the transpose of the multiplied array
-        zeroRgbArray[:, :, 1] = multipliedArray.T
-
-        #Assigning to the output
-        self.output = zeroRgbArray
-        return self.output
+        self.output = np.copy(rgb_final)
+        return rgb_final
+       
 
     def show(self):
         #Showing the output via Matplotlib
-        plt.imshow(self.output, origin='lower', interpolation='nearest')
+        plt.imshow(self.output, interpolation='nearest')
         plt.show()
