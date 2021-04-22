@@ -75,7 +75,7 @@ else:
          temp_batch.append(a)
 
          fileName = img.split(".")
-         temp_label.append(class_dict[fileName[0]])
+         temp_label.append(class_dict[all_labels[fileName[0]]])
 
        batch_img.append(np.array(temp_batch))
        label_batch.append(np.array(temp_label))
