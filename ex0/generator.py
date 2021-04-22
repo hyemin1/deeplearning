@@ -142,14 +142,14 @@ class ImageGenerator:
         action = np.random(0,3)
         #rotation
         if action==0:
-            degree = random.choice([90, 80, 270])
+            degree = random.choice([90, 180, 270])
             img=transform.rotate(img, degree)
         #mirror
         elif action==1:
             img = np.fliplr(img)
         #mirroring and rotation
         else:
-            degree = random.choice([90, 80, 270])
+            degree = random.choice([90, 180, 270])
             img=transform.rotate(img, degree)
             img = np.fliplr(img)
 
