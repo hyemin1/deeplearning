@@ -51,10 +51,22 @@ for fileName in tempImagesList[0]:
     fileNumber = fileName.split(".")
     imagesLabelArray.append(class_dict[all_labels[fileNumber[0]]])
 
-figure = plt.figure(figsize=(8, 8))
+numberOfItemsEachRow = 3
+numberOfRows = math.ceil(batch_size / 3)
+#
+# choiceForMirroring = [True, False]
+# mirrorArray = np.random.choice(choiceForMirroring, size=batch_size)
+#
+# choiceForRotation = [90, 180, 270]
+# rotationArray = np.random.choice(choiceForRotation, size=batch_size)
+
+figure = plt.figure(figsize=(numberOfItemsEachRow + 2, numberOfRows + 4))
 
 for (index, filePath) in enumerate(imagePathArray):
-    figure.add_subplot(4,4,index+1)
+    figure.add_subplot(numberOfRows,3,index+1)
+    plt.axis('off')
+    plt.subplots_adjust(hspace=0.5)
+    plt.title(imagesLabelArray[index])
     plt.imshow(np.load(imagePathArray[index]))
 
 plt.show()
