@@ -27,6 +27,7 @@ class ImageGenerator:
         self.rotation=rotation
         self.mirroring=mirroring
         self.shuffle=shuffle
+        self.batch_num=0# to return n-th batch
 
         # load the names of image files
         image_List = os.listdir(self.file_path)
@@ -127,10 +128,11 @@ class ImageGenerator:
             self.batch_img = np.array([])
             self.batch_img = np.copy(np.array(temp_batch))
 
-        self.images = np.copy(self.batch_img[0])
-        self.labels=np.copy(self.batch_label[0])
+        self.images = np.copy(self.batch_img[self.batch_num])
+        self.labels=np.copy(self.batch_label[self.batch_num])
         images=np.copy(self.images)
         labels=np.copy(self.labels)
+        self.batch_num+=1
         return images, labels
 
     def augment(self,img):
