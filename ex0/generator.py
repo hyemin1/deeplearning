@@ -168,13 +168,13 @@ class ImageGenerator:
         numberOfItemsEachRow = 3
         numberOfRows = math.ceil(self.batch_size / 3)
         figure = plt.figure(figsize=(numberOfItemsEachRow + 2, numberOfRows + 4))
-
-        for (index, filePath) in enumerate(self.batch_img[0]):
+        
+        for index in range(len(self.batch_img[self.batch_num])):
             figure.add_subplot(numberOfRows, 3, index + 1)
             plt.axis('off')
             plt.subplots_adjust(hspace=0.5)
-            plt.title(self.batch_label[0][index])
-            plt.imshow(self.batch_img[0][index])
+            plt.title(self.class_dict[self.batch_label[self.batch_num][index]])
+            plt.imshow(self.batch_img[self.batch_num][index])
 
         plt.show()
 
