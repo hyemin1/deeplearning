@@ -7,7 +7,17 @@ import random as rn
 
 image_List = os.listdir('/Users/rupak/Documents/Deep Learning Exersises/exercise0_material/src_to_implement/data/exercise_data')
 allImagesList = np.array([file for file in image_List if file.endswith('.npy')])
+#-----------------------------------------------------------------------------------
+#for loading images themselves
+#to open images as grapic, use plt.imshow(certain image(ex. all_image[2]))
+#to open images as array with values at terminal, use plt.show(certain image)
 
+#all_img=[]
+#for file in allImagesList:
+#   a = np.load('exercise_data/'+file)
+#   print(a)
+#   all_img.append(a)
+#-----------------------------------------------------------------------------------------
 with open("/Users/rupak/Documents/Deep Learning Exersises/exercise0_material/src_to_implement/data/Labels.json", "r") as file:
     all_labels = json.load(file)
 
