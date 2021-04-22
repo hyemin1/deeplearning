@@ -1,6 +1,7 @@
 import sys
-
 sys.path.append(".")
+from pattern import Checker, Circle, Spectrum
+import generator
 
 from pattern import Checker, Circle, Spectrum
 
@@ -15,3 +16,7 @@ c.show()
 spectrum = Spectrum(256)
 spectrum.draw()
 spectrum.show()
+
+gen = generator.ImageGenerator('./exercise_data/', './Labels.json', 30, [32, 32, 3], rotation=False,mirroring=False, shuffle=False)
+gen.next()
+gen.show()
