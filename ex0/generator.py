@@ -44,14 +44,13 @@ class ImageGenerator:
         # array to store labels for output batch
         self.batch_label = []
         self.batch_img = []
-        # TODO: implement constructor
+
 
     def next(self):
         # This function creates a batch of images and corresponding labels and returns them.
         # In this context a "batch" of images just means a bunch, say 10 images that are forwarded at once.
         # Note that your amount of total data might not be divisible without remainder with the batch_size.
         # Think about how to handle such cases
-        # TODO: implement next method
         # temporal batches and labels to append at total batch and labels
 
         # shuffling the whole order of sequences
@@ -100,8 +99,6 @@ class ImageGenerator:
 
         # rotation
         if self.rotation:
-            # degree = rn.choice([90, 180, 270])
-            # transform.rotate(batch_img, degree)
             temp_batch = []
             for batch in self.batch_img:
                 rotated = []
@@ -122,7 +119,7 @@ class ImageGenerator:
     def augment(self, img):
         # this function takes a single image as an input and performs a random transformation
         # (mirroring and/or rotation) on it and outputs the transformed image
-        # TODO: implement augmentation function
+
         action = np.random(0, 3)
         # rotation
         if action == 0:
@@ -141,15 +138,15 @@ class ImageGenerator:
 
     def class_name(self, x):
         # This function returns the class name for a specific input
-        # TODO: implement class name function
+
         return self.class_dict[self.all_labels[x]]
-        return
+
 
     def show(self):
         print()
         # In order to verify that the generator creates batches as required, this functions calls next to get a
         # batch of images and labels and visualizes it.
-        # TODO: implement show method
+
         numberOfItemsEachRow = 3
         numberOfRows = math.ceil(self.batch_size / 3)
         figure = plt.figure(figsize=(numberOfItemsEachRow + 2, numberOfRows + 4))
