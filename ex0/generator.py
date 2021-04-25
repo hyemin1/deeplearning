@@ -109,10 +109,8 @@ class ImageGenerator:
             self.batch_img = np.array([])
             self.batch_img = np.copy(np.array(temp_batch))
 
-        self.images = np.copy(self.batch_img[self.batch_num])
-        self.labels = np.copy(self.batch_label[self.batch_num])
-        images = np.copy(self.images)
-        labels = np.copy(self.labels)
+        images = np.copy(self.batch_img[self.batch_num])
+        labels = np.copy(self.batch_label[self.batch_num])
         self.batch_num += 1
         return images, labels
 
