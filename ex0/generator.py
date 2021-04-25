@@ -139,7 +139,7 @@ class ImageGenerator:
     def class_name(self, x):
         # This function returns the class name for a specific input
 
-        return self.class_dict[self.all_labels[x]]
+        return self.class_dict[x]
 
 
     def show(self):
@@ -155,7 +155,7 @@ class ImageGenerator:
             figure.add_subplot(numberOfRows, 3, index + 1)
             plt.axis('off')
             plt.subplots_adjust(hspace=0.5)
-            plt.title(self.class_name(self.batch_label[self.batch_num]))
+            plt.title(self.class_name(self.batch_label[self.batch_num][0]))
             plt.imshow(self.batch_img[self.batch_num][index])
 
         plt.show()
