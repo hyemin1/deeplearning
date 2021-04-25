@@ -155,7 +155,7 @@ class ImageGenerator:
             figure.add_subplot(numberOfRows, 3, index + 1)
             plt.axis('off')
             plt.subplots_adjust(hspace=0.5)
-            plt.title(self.class_dict[self.batch_label[self.batch_num][index]])
+            plt.title(self.class_name(self.batch_label[self.batch_num]))
             plt.imshow(self.batch_img[self.batch_num][index])
 
         plt.show()
