@@ -145,15 +145,21 @@ class ImageGenerator:
         # In order to verify that the generator creates batches as required, this functions calls next to get a
         # batch of images and labels and visualizes it.
 
+        # In order to verify that the generator creates batches as required, this functions calls next to get a
+        # batch of images and labels and visualizes it.
+        # TODO: implement show method
         numberOfItemsEachRow = 3
         numberOfRows = math.ceil(self.batch_size / 3)
         figure = plt.figure(figsize=(numberOfItemsEachRow + 2, numberOfRows + 4))
+        imageBatch, batchLabels = self.next()
 
         for index in range(len(self.batch_img[self.batch_num])):
             figure.add_subplot(numberOfRows, 3, index + 1)
             plt.axis('off')
             plt.subplots_adjust(hspace=0.5)
-            plt.title(self.class_name(self.batch_label[self.batch_num][index]))
-            plt.imshow(self.batch_img[self.batch_num][index])
+
+            imageLabel = self.class_name(batchLabels[index])
+            plt.title(imageLabel)
+            plt.imshow(imageBatch[index])
 
         plt.show()
