@@ -141,9 +141,6 @@ class ImageGenerator:
 
 
     def show(self):
-        print()
-        # In order to verify that the generator creates batches as required, this functions calls next to get a
-        # batch of images and labels and visualizes it.
 
         # In order to verify that the generator creates batches as required, this functions calls next to get a
         # batch of images and labels and visualizes it.
