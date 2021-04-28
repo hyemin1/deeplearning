@@ -150,7 +150,7 @@ class ImageGenerator:
         figure = plt.figure(figsize=(numberOfItemsEachRow + 2, numberOfRows + 4))
         imageBatch, batchLabels = self.next()
 
-        for index in range(len(self.batch_img[self.batch_num])):
+        for index in range(len(imageBatch)):
             figure.add_subplot(numberOfRows, 3, index + 1)
             plt.axis('off')
             plt.subplots_adjust(hspace=0.5)
