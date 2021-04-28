@@ -29,6 +29,7 @@ class ImageGenerator:
         self.mirroring = mirroring
         self.shuffle = shuffle
         self.batch_num = 0  # to return n-th batch
+        self.totalNumberOfBathces = 0
 
         # load the names of image files
         image_List = os.listdir(self.file_path)
@@ -60,6 +61,7 @@ class ImageGenerator:
         if ((len(self.all_img) % self.batch_size) == 0):
             # first, compute the batch using file name
             tempBatchNumber = int(len(self.all_img) / self.batch_size)
+            self.totalNumberOfBathces = 0
             tempImagesList = self.all_img.reshape(tempBatchNumber, self.batch_size)
         else:
             # first, compute batches using file names
@@ -70,6 +72,7 @@ class ImageGenerator:
             additionalImageList = np.array(self.all_img[0:itemsToAdd])
             tempImagesList = np.concatenate((self.all_img, additionalImageList))
             tempImagesList = tempImagesList.reshape(tempBatchNumber + 1, self.batch_size)
+            self.totalNumberOfBathces = 0
 
         # load the appropriate batches and labels
         for batch in tempImagesList:
@@ -87,30 +90,23 @@ class ImageGenerator:
             self.batch_label.append(np.array(temp_label))
 
         # mirroring
-        if self.mirroring:
-            temp_batch = []
-            for batch in self.batch_img:
-                rotated = []
-                for img in batch:
-                    rotated.append(np.fliplr(img))
-                temp_batch.append(rotated)
-            self.batch_img = np.array([])
-            self.batch_img = np.copy(np.array(temp_batch))
 
-        # rotation
-        if self.rotation:
-            temp_batch = []
-            for batch in self.batch_img:
-                rotated = []
-                for img in batch:
-                    degree = random.choice([90, 180, 270])
-                    rotated.append(transform.rotate(img, degree))
-                temp_batch.append(rotated)
-            self.batch_img = np.array([])
-            self.batch_img = np.copy(np.array(temp_batch))
+        temp_batch = []
+        for batch in self.batch_img:
+            rotated = []
+            for img in batch:
+                rotated.append(self.augment(img))
+            temp_batch.append(rotated)
+
+
+        self.batch_img = temp_batch
+
+        if self.batch_num == self.totalNumberOfBathces:
+            self.batch_num == 0
 
         images = np.copy(self.batch_img[self.batch_num])
         labels = np.copy(self.batch_label[self.batch_num])
+
         self.batch_num += 1
         return images, labels
 
@@ -118,19 +114,16 @@ class ImageGenerator:
         # this function takes a single image as an input and performs a random transformation
         # (mirroring and/or rotation) on it and outputs the transformed image
 
-        action = np.random(0, 3)
-        # rotation
-        if action == 0:
-            degree = random.choice([90, 180, 270])
+        if self.mirroring:
+            flippingChoice = random.choice([0, 1, 2])
+            if flippingChoice == 0:
+                img = np.fliplr(img)
+            elif flippingChoice == 1:
+                img = np.flipud(img)
+
+        if self.rotation:
+            degree = random.choice([0, 90, 180, 270])
             img = transform.rotate(img, degree)
-        # mirror
-        elif action == 1:
-            img = np.fliplr(img)
-        # mirroring and rotation
-        else:
-            degree = random.choice([90, 180, 270])
-            img = transform.rotate(img, degree)
-            img = np.fliplr(img)
 
         return img
 
@@ -160,3 +153,4 @@ class ImageGenerator:
             plt.imshow(imageBatch[index])
 
         plt.show()
+
