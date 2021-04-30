@@ -1,61 +1,48 @@
-from . import Bayes as ba
-from Optimization import Optimizers as opt
-import numpy as np
-class FullyConnected(ba.BayesLayer):
-    def __init__(self,input_size,output_size):
-        ba.BayesLayer.__init__(self)
-        self.trainable=True
-        self.input_size=input_size
-        self.output_size=output_size
-        self.weights= np.random.uniform(0,1,(self.output_size)*(self.input_size+1))
-        self.weights=np.reshape((self.ouput_size,self.input_size+1))
-        self.input_tensor=np.empty((1,1))
-        self.batch_size=0
-        self.gradient_weights=0
 
-        #optimizer
-        self._optimizer=opt.Sgd(1)
+from Bayes import BayesLayer
+import numpy as np
+from Optimizers import Sgd as opt
+class ReLU(BayesLayer):
+    def __init__(self):
+        super().__init__()
+        self.batch_size=0
+        self.input_size=0
+    def forward(self,input_tensor):
+        self.batch_size = len(input_tensor)
+        self.input_size = len(input_tensor[0])
+        self.input_tensor = input_tensor.flatten()
+
+        self.ouput_tensor = np.maximum(0,self.input_tensor)
+        self.ouput_tensor=np.reshape(self.ouput_tensor,(self.batch_size,self.input_size))
+        output=np.copy(self.ouput_tensor)
+        return output
+    def backward(self,error_tensor):
+        self.prev_error = np.maximum(0,error_tensor)
+        print(error_tensor)
+        # compute gradient w.r.t weight
+        self.input_tensor=np.reshape(self.input_tensor,(self.batch_size,self.input_size))
+        #print(self.input_tensor)
+        #print(error_tensor)
+        #self.gradient_weights = np.matmul(self.input_tensor.T,error_tensor)
+
+        self.weights= np.random.uniform(0,1,len(self.input_tensor)*len(self.input_tensor[0]))
+        self.weights=np.reshape(self.weights,(len(self.input_tensor),len(self.input_tensor[0])))
+        self.gradient_weights = np.matmul(self.input_tensor.T,error_tensor)
+       # self.weights = self.calculate_update(self.weights, self.gradient_weights)
+
+        return self.prev_error
 
     @property
     def optimizer(self):
         return self._optimizer
 
     @optimizer.setter
-    def optimizer(self,learning_rate):
-        self._optimizer = opt.Sgd(learning_rate)
-
-    def forward(self,input_tensor):
-        self.batch_size=len(input_tensor)
-
-        #re-define input_tensor
-        input_tensor=np.flatten(input_tensor)
-        addition_ones  = np.ones((1,self.input_size))
-        self.input_tensor=np.concatenate(input_tensor,addition_ones)
-        self.input_tensor = np.reshape(self.input_tensor, (self.batch_size + 1, self.input_size))
-
-        #re-define weights
-        #addition_ones = np.ones((self.batch_size,1))
-        #np.concetenate((self.weights,addition_ones),axis=1)
-
-
-        self.output_tensor= np.matmul(self.weights,self.input_tensor)
-        output=np.copy(self.output_tensor)
-        return output
-    def backward(self,error_tensor):
-        #remove the column with 1s of weights
-        #self.weights=np.delete(self.weights,-1,1)
-        #Error tensor from the previous layer
-        self.prev_error = np.matmul(self.weights.T,error_tensor)
-        prev = np.copy(self.prev_eror)
-
-        #remove the row with 1s of input tensor
-        self.input_tensor = np.delete(self.input_tensor,len(self.input_tensor)-1,0)
-
-        #compute gradient w.r.t weight
-        self.gradient_weights = np.matmul(self.input_tensor,self.prev_error)
-
-        self.weights = self.calculate_update(self.weights,self.gradient_weights)
-        return prev
+    def optimizer(self, learning_rate):
+        self._optimizer = opt(learning_rate)
 
     def calculate_update(self,weight_tensor,gradient_tensor):
-        return self._optimizer.calculate_update(weight_tensor,gradient_tensor)
+        #self._optimizer = opt(1)
+        #self._optimizer(1)
+        updated_weight = self._optimizer.calculate_update(weight_tensor,gradient_tensor)
+        return updated_weight
+
