@@ -1,12 +1,11 @@
-
-from SoftMax import SoftMax as sft
 import numpy as np
 class CrossEntropyLoss():
     def __init__(self):
         super().__init__()
         self.input_size=0
-        self.soft =sft()
+
     def forward(self,input_tensor,label_tensor):
+        #store to use at backward method
         self.prob_label =input_tensor
 
         #compute loss
@@ -16,5 +15,9 @@ class CrossEntropyLoss():
 
         return self.loss
     def backward(self,label_tensor):
-        self.prev_error = -(np.divide(label_tensor,self.prob_label))
+        #create a error tensor with same shape as given label tensor
+        self.prev_error = label_tensor
+        #assign values with given equation
+        self.prev_error=(-1)*(np.divide(label_tensor,self.prob_label))
+
         return self.prev_error
