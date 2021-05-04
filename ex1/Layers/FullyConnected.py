@@ -1,4 +1,4 @@
-from Bayes import BayesLayer
+from Base import BayesLayer
 import numpy as np
 class FullyConnected(BayesLayer):
     def __init__(self,input_size,output_size):
