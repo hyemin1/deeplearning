@@ -29,10 +29,7 @@ class NeuralNetwork(CrossEntropyLoss, FullyConnected):
             self.layers.append(layer)
 
     def train(self, iterations):
-
-
-        def train(self, iterations):
-        self.lo
+        
 
     def test(self, input_tensor):
         fully_connected = FullyConnected()
