@@ -31,4 +31,13 @@ class NeuralNetwork(CrossEntropyLoss, FullyConnected):
     def train(self, iterations):
 
 
+        def train(self, iterations):
+        self.lo
+
     def test(self, input_tensor):
+        fully_connected = FullyConnected()
+        fully_connected.forward(input_tensor)
+
+        softmax = SoftMax()
+        output = softmax.forward(input_tensor)
+        return output
