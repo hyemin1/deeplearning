@@ -1,4 +1,4 @@
-from Base import BayesLayer
+from Layers import Base
 import numpy as np
 class SoftMax(BayesLayer):
     def __init__(self):
