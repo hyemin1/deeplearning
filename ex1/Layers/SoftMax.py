@@ -20,7 +20,7 @@ class SoftMax(BayesLayer):
         sum_by_rows = np.sum(temp_sum.T, axis=0, keepdims=True)
         batch_sum = sum_by_rows.flatten()
 
-        tiled_batch_sum = np.tile(batch_sum, (4,1)).T
+        tiled_batch_sum = np.tile(batch_sum, (len(error_tensor[0]),1)).T
         error_tensor = error_tensor - tiled_batch_sum
 
         prev_error_tensor = self.output_tensor * error_tensor
