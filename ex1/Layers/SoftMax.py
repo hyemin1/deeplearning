@@ -1,6 +1,6 @@
 from Layers import Base
 import numpy as np
-class SoftMax(BayesLayer):
+class SoftMax(Base.BayesLayer):
     def __init__(self):
         super().__init__()
 
