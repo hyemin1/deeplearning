@@ -1,7 +1,7 @@
-from Bayes import BayesLayer
+from Layers import Base
 import numpy as np
 
-class ReLU(BayesLayer):
+class ReLU(Base.BayesLayer):
     def __init__(self):
         super().__init__()
         self.batch_size=0
