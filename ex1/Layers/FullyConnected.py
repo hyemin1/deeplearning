@@ -1,8 +1,8 @@
 from Layers import Base
 import numpy as np
-class FullyConnected(BayesLayer):
+class FullyConnected(Base.BayesLayer):
     def __init__(self,input_size,output_size):
-        BayesLayer.__init__(self)
+        Base.BayesLayer.__init__(self)
         self.trainable=True
         self.input_size=input_size
         self.output_size=output_size
