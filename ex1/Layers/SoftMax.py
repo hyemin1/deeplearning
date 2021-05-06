@@ -14,23 +14,14 @@ class SoftMax(BayesLayer):
         self.output_tensor = reduced_exp/reduced_sum
 
         return self.output_tensor
-
+    
     def backward(self, error_tensor):
-        batch_sum=[]
-        for i in range(len(error_tensor)):
-            temp=0
-            for j in range(len(error_tensor[i])):
-                temp+= error_tensor[i][j]*self.output_tensor[i][j]
-            batch_sum.append(temp)
+        temp_sum = error_tensor * self.output_tensor
+        sum_by_rows = np.sum(temp_sum.T, axis=0, keepdims=True)
+        batch_sum = sum_by_rows.flatten()
 
-        self.prev=[]
-        for i in range(len(error_tensor)):
-            error_tensor[i]=error_tensor[i]-batch_sum[i]
+        tiled_batch_sum = np.tile(batch_sum, (4,1)).T
+        error_tensor = error_tensor - tiled_batch_sum
 
-        for i in range(len(error_tensor)):
-            temp=[]
-            for j in range(len(error_tensor[0])):
-                temp.append(self.output_tensor[i][j]*error_tensor[i][j])
-            self.prev.append(temp)
-        self.prev=np.reshape(self.prev,(len(error_tensor),len(error_tensor[0])))
-        return self.prev
+        prev_error_tensor = self.output_tensor * error_tensor
+        return prev_error_tensor
