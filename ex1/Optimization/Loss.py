@@ -2,7 +2,6 @@ import numpy as np
 class CrossEntropyLoss():
     def __init__(self):
         super().__init__()
-        self.input_size=0
 
     def forward(self,input_tensor,label_tensor):
         #store to use at backward method
