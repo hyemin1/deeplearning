@@ -1,7 +1,7 @@
 from Layers import Base
 import numpy as np
 
-class ReLU(Base.BayesLayer):
+class ReLU(Base.BaseLayer):
     def __init__(self):
         super().__init__()
         self.batch_size=0
@@ -14,14 +14,14 @@ class ReLU(Base.BayesLayer):
         #make input_tensor 1D
         self.input_tensor = input_tensor.flatten()
 
-        #apply ReLU function
+        #apply ReLU function: max(0,x)
         self.ouput_tensor = np.maximum(0,self.input_tensor)
 
         #reshape
-        print(self.ouput_tensor.shape)
         self.ouput_tensor=np.reshape(self.ouput_tensor,(self.batch_size,self.input_size))
         self.input_tensor = np.reshape(self.input_tensor,(self.batch_size,self.input_size))
-        output=np.copy(self.ouput_tensor)
+
+        output = np.copy(self.ouput_tensor)
         return output
     def backward(self,error_tensor):
         #get row, col for reshaping later
@@ -34,17 +34,11 @@ class ReLU(Base.BayesLayer):
         #initialize prev_error with 0s
         self.prev_error=[0]*len(error_tensor)
         #apply ReLU function for backward computation
+        #if x<=0:0, else:en
         for i in range(len(self.input_tensor)):
             if (self.input_tensor[i]>0):
                 self.prev_error[i]=error_tensor[i]
         #reshape previous error tensor
         self.prev_error=np.reshape(self.prev_error,(row,col))
-        #reshape current error tensor
-        error_tensor = np.reshape(error_tensor,(row,col))
-        #reshape input tensor
-        self.input_tensor=np.reshape(self.input_tensor,(self.batch_size,self.input_size))
-
-        #compute gradient w.r.t weights
-        self.gradient_weights = np.matmul(self.input_tensor.T,error_tensor)
 
         return self.prev_error
