@@ -1,5 +1,5 @@
 import numpy as np
-class BayesLayer():
+class BaseLayer():
     def __init__(self):
         self.trainable=False
         self.weights=np.empty((1,1))
