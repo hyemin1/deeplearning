@@ -7,12 +7,29 @@ class Conv(Base.BaseLayer):
         self.weights=None
         self.bias=None
         self.stride_shape=stride_shape
-        self.convolution_shape = convolution_shape
+        self.convolution_shape = convolution_shape#kernel shape
         self.num_kernels = num_kernels
+        self.opt_1=None
+        self.opt_2=None
 
-        #in case of 2D convolution layer. should be corrected for 1D case
-        self.weights = np.random.uniform(0,1,(self.convolution_shape.shape[1]*self.convolution_shape[2]))
-        self.weights= np.reshape(self.weights,(self.convolution_shape[1],self.convolution_shape[2]))
+        #number of batches we have
+        self.batch_num=self.convolution_shape[0]
+        #number of channels per batch
+        self.channel_num=self.convolution_shape[1]
+
+        self.y=self.convolution_shape[2]
+        #in case of 2D input
+        if (len(convolution_shape)==4):
+            self.x=self.convolution_shape[3]
+            #initialize weights using given kernel shape
+            self.weights=np.randpm.uniform(0,1,(self.channel_num*self.y*self.x))
+            self.weights=np.reshape(self.weights,(self.channel_num,self.y,self.x))
+        #in case of 1D input
+        else:
+            # initialize weights using given kernel shape
+            self.weights=np.random.uniform(0,1,(self.channel_num*self.y))
+            self.weights=np.reshape(self.weights,(self.channel_num,self.y))
+        self.bias=None
 
     @property
     def gradient_weights(self):
