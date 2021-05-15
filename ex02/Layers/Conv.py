@@ -1,5 +1,7 @@
 from Layers import Base
 import numpy as np
+import math
+from scipy import ndimage
 class Conv(Base.BaseLayer):
     def __init__(self,stride_shape,convolution_shape,num_kernels):
         super().__init__()
@@ -7,27 +9,31 @@ class Conv(Base.BaseLayer):
         self.weights=None
         self.bias=None
         self.stride_shape=stride_shape
-        self.convolution_shape = convolution_shape#kernel shape
-        self.num_kernels = num_kernels
+        self.convolution_shape = convolution_shape#shape for convolution
+        self.num_kernels = num_kernels #total number of kernels
         self.opt_1=None
         self.opt_2=None
+        self.img_2d=False
+        #number of input channels
+        self.input_cha_num=self.convolution_shape[0]
 
-        #number of channels per batch
-        self.channel_num=self.convolution_shape[0]
-
+        #in 1D: length of array, in 2D: height of matrix
         self.m=self.convolution_shape[1]
+
         #in case of 2D input
         if (len(convolution_shape)==3):
+            self.img_2d=True
+            #width of matrix
             self.n=self.convolution_shape[2]
             #initialize weights using given kernel shape
-            self.weights=np.randpm.uniform(0,1,(self.channel_num*self.m*self.n))
-            self.weights=np.reshape(self.weights,(self.channel_num,self.m,self.n))
+            self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m*self.n))
+            self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m,self.n))
         #in case of 1D input
         else:
             # initialize weights using given kernel shape
-            self.weights=np.random.uniform(0,1,(self.channel_num*self.m))
-            self.weights=np.reshape(self.weights,(self.channel_num,self.m))
-        self.bias=None
+            self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m))
+            self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m))
+        self.bias=0
     @property
     def gradient_weights(self):
         return self.gradient_w
@@ -51,42 +57,60 @@ class Conv(Base.BaseLayer):
         """
         implementation step
         0. set input layout
-        1. do zero padding
-        2. calculate the output tensor shape
+        1. calculate the output tensor shape
+        2. do zero padding
         3. do convolution using scipy library,weight matrix,bias
         """
 
         """
         0. set input layout
         """
-        #set dimension
-        self.dimen=len(input_tensor.shape)-2
         #number of batches
         b=input_tensor.shape[0]
-        #number of channels
-        c= input_tensor.shape[1]
+        #set dimension(number of input channels per batch)
+        self.c= input_tensor.shape[1]
         #spatial dimension
+        #in 1D: length of array, in 2D: height of matrix
         y = input_tensor.shape[2]
-        if(self.dimen==2):
+        #in 2D
+        if(self.img_2d==True):
+            #width of matrix
             x = input_tensor.shape[3]
 
         """
-        1. do zero padding 
-        2. calculate the output tensor shape
+        1. calculate the output tensor shape
+        2. do zero padding
         """
-        #maybe wrong
-        #case of 1*1 convolutions should be added
-        if (self.dimen==2):
-            pad_y = y - self.m
-            pad_x = x - self.n
-            if (pad_x != 0 or pad_y != 0):
-                input_tensor_padded = np.pad(input_tensor, ((pad_y, pad_y), (pad_x, pad_x)), 'same',constant_values=0)
-            output_y= (self.y+2*pad_y-self.m)/self.stride_shape[0]  +1
-            output_x = (self.x+2*pad_x-self.n)/self.stride_shape[1] +1
-            output_stack_num=self.channel_num
+        if(self.img_2d==True):
+            pad_height= (self.m-1)/2
+            pad_width = (self.n-1)/2
+
+            output_height = math.floor(((y-self.m+2*pad_height)/self.stride_shape[0])+1)
+            output_width =math.floor(((x-self.n+2*pad_width)/self.stride_shape[1])+1)
+            self.output_tensor = np.zeros((b,self.num_kernels,output_height,output_width))
+
+            #self.padded_input = np.pad(input_tensor, ((pad_height, pad_height), (pad_width, pad_width)), 'same',constant_values=0)
         else:
-            pad_y = y-self.m
-            if(pad_y!=0):
-                input_tensor_padded = np.pad(input_tensor,pad_y,'same',constant_values=0)
-                output_y = (self.y+2*pad_y-self.m)/self.stride_shape  +1
-                output_stack_num=self.channel_num
+            pad=(self.m-1)/2
+            output_length = (y-self.m+2*pad)/self.stride_shape[0]+1
+            self.output_tensor=np.zeros((self.num_kernels,self.c,output_length))
+            #self.padded_input=np.pad(input_tensor,pad,'same',constant_values=0)
+        return self.output_tensor
+
+        """
+        3. do convolution using scipy library,padded input,kernel,bias
+        """
+"""
+        for batch in range(b):
+            for output_channel in range(self.num_kernels):
+                per_channel_temp=0
+                for input_channel in range(self.input_cha_num):
+                    temp=ndimage.convolve(input_tensor[batch][input_channel],self.weights[output_channel][input_channel],mode='constant',cval=1)
+                    temp=temp+self.bias
+                    per_channel_temp+=temp
+                    #np.append(per_channel_temp,temp)
+                self.output_tensor[batch][output_channel]=per_channel_temp
+"""
+
+
+
