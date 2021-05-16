@@ -79,6 +79,20 @@ class Conv(Base.BaseLayer):
 
         """
         1. calculate the output tensor shape
+        """
+        output_tensor_shape = None
+        n, h_in, w_in, _ = input_tensor
+        h_f, w_f, _, n_f = self.weights.shape
+        if self.padding == 'same':
+            output_tensor_shape = n, h_in, w_in, n_f
+        elif self.padding == 'valid':
+            h_out = (h_in - h_f) // self.stride_shape + 1
+            w_out = (w_in - w_f) // self.stride_shape + 1
+            output_tensor_shape = n, h_out, w_out, n_f
+        else:
+            print("Invalid output dimension.")
+        
+        """
         2. do zero padding
         """
         if(self.img_2d==True):
@@ -97,7 +111,7 @@ class Conv(Base.BaseLayer):
             #self.padded_input=np.pad(input_tensor,pad,'same',constant_values=0)
         return self.output_tensor
     """
-    Adding zero padding
+    Adding zero padding, again!
     """
         padding_size = (0,0)
         if self.padding == "same":
