@@ -96,6 +96,21 @@ class Conv(Base.BaseLayer):
             self.output_tensor=np.zeros((self.num_kernels,self.c,output_length))
             #self.padded_input=np.pad(input_tensor,pad,'same',constant_values=0)
         return self.output_tensor
+    """
+    Adding zero padding
+    """
+        padding_size = (0,0)
+        if self.padding == "same":
+            height, width = input_tensor.shape[2], input_tensor.shape[3]
+            padding_size = (height - 1) // 2, (width - 1) // 2
+        elif self.padding == "valid":
+            padding_size = (0,0)
+        else:
+            print("Invalid padding!")
+
+        padding_added_tensor = np.pad(array= input_tensor,
+                                      pad_width= ((0, 0), (padding_size[0], padding_size[0]), (padding_size[1], padding_size[1]), (0, 0)),
+                                      mode = 'constant')
 
         """
         3. do convolution using scipy library,padded input,kernel,bias
