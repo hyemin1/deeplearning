@@ -3,6 +3,7 @@ import numpy as np
 import math
 from scipy import ndimage
 from scipy import signal
+from Layers import Initializers
 class Conv(Base.BaseLayer):
     def __init__(self,stride_shape,convolution_shape,num_kernels):
         super().__init__()
@@ -12,9 +13,12 @@ class Conv(Base.BaseLayer):
         self.stride_shape=stride_shape
         self.convolution_shape = convolution_shape#shape for convolution
         self.num_kernels = num_kernels #total number of kernels
-        self.opt_1=None
-        self.opt_2=None
+        #optimizer to update wdight
+        self.opt_w=None
+        #optimizer to update bias
+        self.opt_b=None
         self.img_2d=False
+
         #number of input channels
         self.input_cha_num=self.convolution_shape[0]
 
@@ -29,12 +33,17 @@ class Conv(Base.BaseLayer):
             #initialize weights using given kernel shape
             self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m*self.n))
             self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m,self.n))
+            #initialize bias
+            self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
+            self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num, self.m, self.n))
         #in case of 1D input
         else:
             # initialize weights using given kernel shape
             self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m))
             self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m))
-        self.bias=0
+            #initialize bias
+            self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
+
     @property
     def gradient_weights(self):
         return self.gradient_w
@@ -43,14 +52,24 @@ class Conv(Base.BaseLayer):
         return self.gradient_b
     @property
     def optimizer(self,opt):
-        self.opt_1=opt
-        self.opt_2=opt
+        self.opt_w=np.copy.deepcopy(opt)
+        self.opt_b=np.copy.deepcopy(opt)
 
     #should be corrected
     def initialize(self,weights_initializer,bias_initializer):
-        fan_in = self.input_cha_num*self.m*self.n
-        fan_out = self.num_kernels*self.m*self.n
-        self.weights = weights_initializer.initialize()
+
+        if(self.img_2d==True):
+            self.fan_in = self.input_cha_num*self.m*self.n
+            self.fan_out = self.num_kernels*self.m*self.n
+
+            weights_initializer.initialize((self.m,self.n),self.fan_in,self.fan_out)
+            bias_initializer.initialize((self.m,self.n),self.fan_in,self.fan_out)
+        else:
+            self.fan_in = self.input_cha_num * self.m
+            self.fan_out = self.num_kernels * self.m
+
+            weights_initializer.initialize((self.m), self.fan_in, self.fan_out)
+            bias_initializer.initialize((self.m), self.fan_in, self.fan_out)
 
     def forward(self,input_tensor):
         """
@@ -104,7 +123,7 @@ class Conv(Base.BaseLayer):
                 pad_left = np.floor(pad_width / 2)
                 pad_right = pad_left + 1
 
-            pad_in = np.pad(input_tensor,[(0,0),(0,0),(int(pad_top),int(pad_bottom)),(int(pad_left),int(pad_right))],mode='constant',constant_values=0)
+            #pad_in = np.pad(input_tensor,[(0,0),(0,0),(int(pad_top),int(pad_bottom)),(int(pad_left),int(pad_right))],mode='constant',constant_values=0)
             #for batch in range(b):
             #    for out_channel in range(self.num_kernels):
             #        sum=0
@@ -128,10 +147,10 @@ class Conv(Base.BaseLayer):
             #            for j in range(self.n):
             #                self.output_tensor[x][y] += pad_in[x + i][y + j] * self.weights[i][j]
 
-            for batch in range(b):
-                for out_ch in range(self.num_kernels):
-                    for in_ch in range(self.input_cha_num):
-                        self.output_tensor[batch][out_ch]+=signal.convolve2d(pad_in[batch][in_ch],self.weights[out_ch][in_ch],mode='valid')
+            # for batch in range(b):
+            #     for out_ch in range(self.num_kernels):
+            #         for in_ch in range(self.input_cha_num):
+            #             self.output_tensor[batch][out_ch]+=signal.convolve2d(pad_in[batch][in_ch],self.weights[out_ch][in_ch],mode='valid')
 
 
 
@@ -151,19 +170,13 @@ class Conv(Base.BaseLayer):
 
         return self.output_tensor
 
-        """
-        3. do convolution using scipy library,padded input,kernel,bias
-        """
-"""
-        for batch in range(b):
-            for output_channel in range(self.num_kernels):
-                per_channel_temp=0
-                for input_channel in range(self.input_cha_num):
-                    temp=ndimage.convolve(input_tensor[batch][input_channel],self.weights[output_channel][input_channel],mode='constant',cval=1)
-                    temp=temp+self.bias
-                    per_channel_temp+=temp
-                    #np.append(per_channel_temp,temp)
-                self.output_tensor[batch][output_channel]=per_channel_temp
-"""
 
+    def backward(self,error_tensor):
+        if(self.img_2d==True):
+            print()
+            #self.gradient_b=np.sum(error_tensor,axis=(0,1),keepdims=True)
+        else:
+            print()
+            #self.gradient_b = np.sum(error_tensor, axis=(1, 2), keepdims=True)
+        return
 
