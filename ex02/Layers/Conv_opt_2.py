@@ -151,6 +151,28 @@ class Conv(Base.BaseLayer):
             #     for out_ch in range(self.num_kernels):
             #         for in_ch in range(self.input_cha_num):
             #             self.output_tensor[batch][out_ch]+=signal.convolve2d(pad_in[batch][in_ch],self.weights[out_ch][in_ch],mode='valid')
+            
+            number_of_batches = input_tensor.shape[0]
+            number_of_channels = input_tensor.shape[1]
+            image_width = input_tensor.shape[2]
+            image_height = input_tensor.shape[3]
+
+            padded_image_width = image_width + (self.stride_shape[0] * 2)
+            padded_image_height = image_height + (self.stride_shape[1] * 2)
+
+            temp_input_tensor = np.zeros(number_of_batches * number_of_channels * (padded_image_width) * (padded_image_height))
+            temp_input_tensor = np.reshape(temp_input_tensor, (number_of_batches, number_of_channels, (padded_image_width), (padded_image_height)))
+
+            for image in range(number_of_batches-1):
+                for channel in range(number_of_channels-1):
+                    temp_input_tensor[image][channel] = np.pad(input_tensor[image][channel], pad_width = 1, mode = "constant")
+
+
+            output_width = int(np.ceil(float(input_tensor.shape[2]) / float(self.stride_shape[0])))
+            output_height = int(np.ceil(float(input_tensor.shape[3]) / float(self.stride_shape[1])))
+
+            temp_output_tensor = np.zeros(number_of_batches * self.num_kernels * output_width * output_height)
+            temp_output_tensor = np.reshape(temp_output_tensor, (number_of_batches, self.num_kernels, output_width, output_height))
 
 
 
