@@ -4,6 +4,8 @@ import math
 from scipy import ndimage
 from scipy import signal
 from Layers import Initializers
+from PIL import Image
+import copy
 class Conv(Base.BaseLayer):
     def __init__(self,stride_shape,convolution_shape,num_kernels):
         super().__init__()
@@ -55,9 +57,11 @@ class Conv(Base.BaseLayer):
     def gradient_bias(self):
         return self.gradient_b
     @property
+    def optimizer(self):
+        return self._optimizer
+    @optimizer.setter
     def optimizer(self,opt):
-        self.opt_w=np.copy.deepcopy(opt)
-        self.opt_b=np.copy.deepcopy(opt)
+        self._optimizer=copy.deepcopy(opt)
 
     #should be corrected
     def initialize(self,weights_initializer,bias_initializer):
@@ -66,14 +70,14 @@ class Conv(Base.BaseLayer):
             self.fan_in = self.input_cha_num*self.m*self.n
             self.fan_out = self.num_kernels*self.m*self.n
 
-            weights_initializer.initialize((self.m,self.n),self.fan_in,self.fan_out)
-            bias_initializer.initialize((1),self.fan_in,self.fan_out)
+            self.weights=weights_initializer.initialize(self.weights.shape,self.fan_in,self.fan_out)
+            self.bias=bias_initializer.initialize(self.bias.shape,self.fan_in,self.fan_out)
         else:
             self.fan_in = self.input_cha_num * self.m
             self.fan_out = self.num_kernels * self.m
 
-            weights_initializer.initialize((self.m), self.fan_in, self.fan_out)
-            bias_initializer.initialize((1), self.fan_in, self.fan_out)
+            self.weights=weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
+            self.bias=bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
 
     def forward(self,input_tensor):
         """
@@ -142,6 +146,7 @@ class Conv(Base.BaseLayer):
                             self.output_tensor[batch,out_channel,h,w]=np.sum(subset*self.weights[out_channel,:,:,:]+self.bias[out_channel])
 
 
+
         else:
             pad_height = np.ceil((self.stride_shape[0] * y - self.stride_shape[0] + self.m - y) )
             out_height = np.ceil(float(y) / float(self.stride_shape[0]))
@@ -161,8 +166,8 @@ class Conv(Base.BaseLayer):
                 for out_channel in range(self.num_kernels):
                     for h in range(int(out_height)):
                         subset = padded_input[batch,:,h*self.stride_shape[0]:h*self.stride_shape[0]+self.m]
-                        self.output_tensor[batch,out_channel,h]=np.sum(subset*self.weights[out_channel,:,:]+self.bias[out_channel])
-   
+                        self.output_tensor[batch,out_channel,h]=np.sum(subset*self.weights[out_channel,:,:])+self.bias[out_channel]
+
 
         return self.output_tensor
 
@@ -173,10 +178,24 @@ class Conv(Base.BaseLayer):
         
         if(self.img_2d==True):
             print()
-            #self.gradient_b=np.sum(error_tensor,axis=(0,1),keepdims=True)
+            #print(error_tensor.shape)
+            self.gradient_b=np.zeros(self.bias.shape)
+
+            new_weights = self.weights
+            for ker in range(self.weights.shape[0]):
+                for in_cha in range(self.weights.shape[1]):
+                    new_weights[ker,in_cha]=np.fliplr(self.weights[ker,in_cha])
+            new_weights=new_weights.flatten()
+            #reshaping needed
+            #new_weights.reshape(new_weights,int(self.weights.shape[1]),int(self.weights.shape[0]),int(self.weights.shape[2]),int(self.weights.shape[3]))
+            print(new_weights.shape)
+            #new_weights=np.reshape(new_weights,(error_tensor.shape[0],self.input_cha_num,error_tensor.shape[2],error_tensor.shape[3]))
+
+            #print(new_weights.shape)
 
         else:
             print()
             #self.gradient_b = np.sum(error_tensor, axis=(1, 2), keepdims=True)
+            self.gradient_b=np.zeros(self.bias.shape)
         return self.prev_error
 
