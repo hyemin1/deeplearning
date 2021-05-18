@@ -9,6 +9,7 @@ class NeuralNetwork():
         self.data_layer = None #contains input data & label
         self.loss_layer = None # contain cross entropy layer
         self.bias_initializer = bias_initializer
+        self.weights_initializer=weights_initializer
 
     def forward(self):
         self.input_tensor, self.label_tensor = self.data_layer.next()
@@ -26,9 +27,10 @@ class NeuralNetwork():
     def append_layer(self,layer):
         if layer.trainable==True:
             layer._optimizer = copy.deepcopy(self.optimizer)
-            weights_shape = (len(layer.weights), len(layer.weights[0]))
-            initialized_weights = np.full(shape=weights_shape, fill_value=self.bias_initializer.weight_constant)
-            layer.weights = initialized_weights
+            #weights_shape = (len(layer.weights), len(layer.weights[0]))
+            #initialized_weights = np.full(shape=weights_shape, fill_value=self.bias_initializer.weight_constant)
+            #layer.weights = initialized_weights
+            layer.initialize(self.weights_initializer,self.bias_initializer)
 
         self.layers.append(layer)
 
