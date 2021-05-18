@@ -34,15 +34,19 @@ class Conv(Base.BaseLayer):
             self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m*self.n))
             self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m,self.n))
             #initialize bias
-            self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
-            self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num, self.m, self.n))
+            #self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
+            #self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num, self.m, self.n))
+            self.bias= np.random.uniform(0,1,(self.num_kernels))
+            #self.bias = np.reshape(self.bias,(self.num_kernels,self.input_cha_num))
         #in case of 1D input
         else:
             # initialize weights using given kernel shape
             self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m))
             self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m))
             #initialize bias
-            self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
+            #self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
+            self.bias = np.random.uniform(0, 1, (self.num_kernels))
+            #self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num))
 
     @property
     def gradient_weights(self):
@@ -63,13 +67,13 @@ class Conv(Base.BaseLayer):
             self.fan_out = self.num_kernels*self.m*self.n
 
             weights_initializer.initialize((self.m,self.n),self.fan_in,self.fan_out)
-            bias_initializer.initialize((self.m,self.n),self.fan_in,self.fan_out)
+            bias_initializer.initialize((1),self.fan_in,self.fan_out)
         else:
             self.fan_in = self.input_cha_num * self.m
             self.fan_out = self.num_kernels * self.m
 
             weights_initializer.initialize((self.m), self.fan_in, self.fan_out)
-            bias_initializer.initialize((self.m), self.fan_in, self.fan_out)
+            bias_initializer.initialize((1), self.fan_in, self.fan_out)
 
     def forward(self,input_tensor):
         """
@@ -83,6 +87,7 @@ class Conv(Base.BaseLayer):
         """
         0. set input layout
         """
+        self.input_tensor=input_tensor
         #number of batches
         b=input_tensor.shape[0]
         #set dimension(number of input channels per batch)
@@ -100,9 +105,9 @@ class Conv(Base.BaseLayer):
         2. do zero padding
         """
         if(self.img_2d==True):
-            pad_height= np.ceil((self.stride_shape[0]*y-self.stride_shape[0]+self.m-y)/2)
+            pad_height= np.ceil((self.stride_shape[0]*y-self.stride_shape[0]+self.m-y))
             pad_height = int(pad_height)
-            pad_width = np.ceil((self.stride_shape[1]*x-self.stride_shape[1]+self.n-x)/2)
+            pad_width = np.ceil((self.stride_shape[1]*x-self.stride_shape[1]+self.n-x))
             pad_width = int(pad_width)
 
             #padded_input = np.pad(input_tensor,[(0,0),(pad_height,pad_height),(pad_width,pad_width),(0,0)],mode='constant',constant_values=0)
@@ -110,74 +115,35 @@ class Conv(Base.BaseLayer):
             out_height = np.ceil(float(y) / float(self.stride_shape[0]))
             out_width = np.ceil(float(x) / float(self.stride_shape[1]))
             self.output_tensor = np.zeros((b,self.num_kernels,int(out_height),int(out_width)))
+
             if (pad_height % 2 == 0):
                 pad_top = pad_height / 2
-                pad_bottom = pad_top
+                pad_bottom = pad_height-pad_top
             else:
                 pad_top = np.floor(pad_height / 2)
-                pad_bottom = pad_top + 1
+                pad_bottom = pad_top+1
             if (pad_width % 2 == 0):
                 pad_left = pad_width / 2
-                pad_right = pad_left
+                pad_right = pad_width-pad_left
             else:
                 pad_left = np.floor(pad_width / 2)
-                pad_right = pad_left + 1
+                pad_right = pad_left+1
+            padded_input = np.zeros((b,self.c,y+pad_height,x+pad_width))
 
-            #pad_in = np.pad(input_tensor,[(0,0),(0,0),(int(pad_top),int(pad_bottom)),(int(pad_left),int(pad_right))],mode='constant',constant_values=0)
-            #for batch in range(b):
-            #    for out_channel in range(self.num_kernels):
-            #        sum=0
-            #        for in_channel in range(self.input_cha_num):
-            #            #sum=sum+ np.sum(signal.convolve2d(input_tensor[batch][in_channel],self.weights[batch][out_channel],mode='same') )
-            #            self.output_tensor[batch][out_channel]=signal.convolve2d(input_tensor[batch][in_channel],self.weights[batch][out_channel],mode='same')
-            #for batch in range(b):
-            #    for out_ch in range(self.num_kernels):
-            #        for in_ch in range(self.input_cha_num):
+            for batch in range(b):
+                for channel in range(self.c):
+                    padded_input[batch,channel]=np.pad(input_tensor[batch,channel],[(int(pad_top),int(pad_bottom)),(int(pad_left),int(pad_right))],mode='constant')
 
-            #for n in range(b):
-            #    for i in range(int(out_height)):
-            #        for j in range(int(out_width)):
-            #            for ou_ch in range(self.num_kernels):
-            #                self.output_tensor[n,ou_ch, i, j] = np.multiply(
-            #                    input_tensor[n, :,i:i + self.m, j:j + self.n], self.weights[:, ou_ch,:, :]).sum()
-
-           # for x in range(out_height):
-            #    for y in range(out_width):
-            #        for i in range(self.m):
-            #            for j in range(self.n):
-            #                self.output_tensor[x][y] += pad_in[x + i][y + j] * self.weights[i][j]
-
-            # for batch in range(b):
-            #     for out_ch in range(self.num_kernels):
-            #         for in_ch in range(self.input_cha_num):
-            #             self.output_tensor[batch][out_ch]+=signal.convolve2d(pad_in[batch][in_ch],self.weights[out_ch][in_ch],mode='valid')
-            
-            number_of_batches = input_tensor.shape[0]
-            number_of_channels = input_tensor.shape[1]
-            image_width = input_tensor.shape[2]
-            image_height = input_tensor.shape[3]
-
-            padded_image_width = image_width + (self.stride_shape[0] * 2)
-            padded_image_height = image_height + (self.stride_shape[1] * 2)
-
-            temp_input_tensor = np.zeros(number_of_batches * number_of_channels * (padded_image_width) * (padded_image_height))
-            temp_input_tensor = np.reshape(temp_input_tensor, (number_of_batches, number_of_channels, (padded_image_width), (padded_image_height)))
-
-            for image in range(number_of_batches-1):
-                for channel in range(number_of_channels-1):
-                    temp_input_tensor[image][channel] = np.pad(input_tensor[image][channel], pad_width = 1, mode = "constant")
-
-
-            output_width = int(np.ceil(float(input_tensor.shape[2]) / float(self.stride_shape[0])))
-            output_height = int(np.ceil(float(input_tensor.shape[3]) / float(self.stride_shape[1])))
-
-            temp_output_tensor = np.zeros(number_of_batches * self.num_kernels * output_width * output_height)
-            temp_output_tensor = np.reshape(temp_output_tensor, (number_of_batches, self.num_kernels, output_width, output_height))
-
+            for batch in range(b):
+                for out_channel in range(self.num_kernels):
+                    for h in range(int(out_height)):
+                        for w in range(int(out_width)):
+                            subset = padded_input[batch,:,h*self.stride_shape[0]:h*self.stride_shape[0]+self.m,w*self.stride_shape[1]:w*self.stride_shape[1]+self.n]
+                            self.output_tensor[batch,out_channel,h,w]=np.sum(subset*self.weights[out_channel,:,:,:]+self.bias[out_channel])
 
 
         else:
-            pad_height = np.ceil((self.stride_shape[0] * y - self.stride_shape[0] + self.m - y) / 2)
+            pad_height = np.ceil((self.stride_shape[0] * y - self.stride_shape[0] + self.m - y) )
             out_height = np.ceil(float(y) / float(self.stride_shape[0]))
             self.output_tensor = np.zeros((b, self.num_kernels, int(out_height)))
             if (pad_height % 2 == 0):
@@ -186,19 +152,31 @@ class Conv(Base.BaseLayer):
             else:
                 pad_top = np.floor(pad_height / 2)
                 pad_bottom = pad_top + 1
-        #set padding size
+            padded_input = np.zeros((b, self.c, int(y + pad_height)))
+            for batch in range(b):
+                for channel in range(self.c):
+                    padded_input[batch,channel]=np.pad(input_tensor[batch,channel],[(int(pad_top),int(pad_bottom))],mode='constant')
 
-
+            for batch in range(b):
+                for out_channel in range(self.num_kernels):
+                    for h in range(int(out_height)):
+                        subset = padded_input[batch,:,h*self.stride_shape[0]:h*self.stride_shape[0]+self.m]
+                        self.output_tensor[batch,out_channel,h]=np.sum(subset*self.weights[out_channel,:,:]+self.bias[out_channel])
+   
 
         return self.output_tensor
 
 
     def backward(self,error_tensor):
+        self.prev_error = np.zeros(self.input_tensor.shape)
+        self.gradient_w=np.zeros(self.weights.shape)
+        
         if(self.img_2d==True):
             print()
             #self.gradient_b=np.sum(error_tensor,axis=(0,1),keepdims=True)
+
         else:
             print()
             #self.gradient_b = np.sum(error_tensor, axis=(1, 2), keepdims=True)
-        return
+        return self.prev_error
 
