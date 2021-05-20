@@ -186,48 +186,65 @@ class Conv(Base.BaseLayer):
         self.prev_error = np.zeros(self.input_tensor.shape)
         self.gradient_w = np.zeros(self.weights.shape)
 
-        # self.gradient_w = (1/self.input_tensor.shape[0]) * np.dot(self.padded_input, error_tensor)
-
-        num_of_batches = self.prev_error.shape[0]
-        num_of_channels = self.prev_error.shape[1]
-        num_of_rows = self.prev_error.shape[2]
-
         if (self.img_2d == True):
-            num_of_columns = self.prev_error.shape[3]
-            for batch in range(num_of_batches):
-                for channels in range(num_of_channels):
-                    for row in range(num_of_rows):
-                        row_start = row * self.stride_shape[0]
-                        row_end = row_start + self.m
-                        for column in range(num_of_columns):
-                            column_start = column * self.stride_shape[1]
-                            column_end = column_start + self.n
+            self.gradient_b = np.zeros(self.bias.shape)
+            self.gradient_w = np.zeros(self.input_tensor.shape)
+            new_weights = np.zeros(self.weights.shape)
+            self.gradient_b=np.sum(error_tensor, axis=(1, 2, 3), keepdims=True)
 
-                            self.prev_error[:, :, row_start:row_end, column_start:column_end] += np.sum(
-                                self.weights[:, :, :, :] *
-                                error_tensor[:, :, row:row + 1, column:column + 1]
-                            )
+            for batch in range(error_tensor.shape[0]):
+                temp_error = self.input_tensor[batch]
+                for kernel in range(error_tensor.shape[1]):
+                    pad_height = self.m - 1
+                    pad_width = self.n - 1
+                    if (pad_height % 2 == 0):
+                        pad_top = pad_height / 2
+                        pad_bottom = pad_height - pad_top
+                    else:
+                        pad_top = np.floor(pad_height / 2)
+                        pad_bottom = pad_top + 1
 
-                            if self.opt_w != None:
-                                self.gradient_w += np.sum(self.padded_input[:, :, row_start:row_end, column_start:column_end] *
-                                                          error_tensor[:, :, row: row + 1, column: column + 1])
-            # self.gradient_b=np.sum(error_tensor,axis=(0,1),keepdims=True)
+                    if (pad_width % 2 == 0):
+                        pad_left = pad_width / 2
+                        pad_right = pad_width - pad_top
+                    else:
+                        pad_left = np.floor(pad_width / 2)
+                        pad_right = pad_left + 1
 
+                    temp_input = np.zeros(
+                        (self.input_cha_num, int(temp_error.shape[1] + pad_height), int(temp_error.shape[2] + pad_width)))
+                    for channel in range(temp_error.shape[1]):
+                        temp_input[kernel] =  np.pad(temp_error[channel],
+                                                [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
+                                                mode='constant')
+                    self.gradient_w[batch][kernel] = signal.correlate(temp_input, error_tensor[kernel], mode='valid')[0]
+                self.gradient_w = self.gradient_w[:, :, ::self.stride_shape[0], ::self.stride_shape[1]]
+
+
+
+
+
+            new_weights = np.reshape(new_weights, (
+            self.weights.shape[1], self.weights.shape[0], self.weights.shape[2], self.weights.shape[3]))
+            # for ker in range(self.weights.shape[0]):
+            #     for in_cha in range(self.weights.shape[1]):
+            #         new_weights[ker,in_cha]=np.fliplr(self.weights[ker,in_cha])
+            # new_weights=new_weights.flatten()
+
+            # reshaping needed
+            # new_weights.reshape(new_weights,int(self.weights.shape[1]),int(self.weights.shape[0]),int(self.weights.shape[2]),int(self.weights.shape[3]))
+            # print(new_weights.shape)
+            # new_weights=np.reshape(new_weights,(error_tensor.shape[0],self.input_cha_num,error_tensor.shape[2],error_tensor.shape[3]))
+
+            # print(new_weights.shape)
 
         else:
-            for batch in range(num_of_batches):
-                for channels in range(num_of_channels):
-                    for row in range(num_of_rows):
-                        row_start = row * self.stride_shape[0]
-                        row_end = row_start + self.m
-
-                        self.prev_error[:, :, row_start:row_end] += np.sum(
-                            self.weights[batch, :, :] *
-                            error_tensor[:, :, row:row + 1]
-                        )
-
-                        if self.opt_w != None:
-                            self.gradient_w += np.sum(
-                                self.padded_input[:, :, row_start:row_end] *
-                                error_tensor[:, :, row: row + 1])
+            print()
+            self.gradient_b = np.sum(error_tensor, axis=(1, 2), keepdims=True)
+            self.gradient_b = np.sum(error_tensor, axis=0)
+            self.gradient_b = np.zeros(self.bias.shape)
+            for batch in range(error_tensor.shape[0]):
+                for ker in range(error_tensor.shape[1]):
+                    for h in range(error_tensor.shape[2]):
+                        self.gradient_b[ker] += error_tensor[batch, ker, h]
         return self.prev_error
