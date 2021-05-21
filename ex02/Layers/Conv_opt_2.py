@@ -177,30 +177,62 @@ class Conv(Base.BaseLayer):
         self.gradient_w=np.zeros(self.weights.shape)
         
         if(self.img_2d==True):
-            self.gradient_b=np.zeros(self.bias.shape)
+          #calculate gradient w.r.t bias
+            #create gradient_b array
+            self.gradient_b = np.zeros(self.bias.shape)
+            #sum up values of error tensor
+            for ker in range(self.num_kernels):
+                self.gradient_b[ker]=np.sum(error_tensor[:,ker,:,:])
             new_weights = np.zeros(self.weights.shape)
-            #self.gradient_b=np.sum(error_tensor, axis=(1, 2, 3), keepdims=True)
-            # for batch in range(error_tensor.shape[0]):
-            #     for ker in range(error_tensor.shape[1]):
-            #         for h in range(error_tensor.shape[2]):
-            #             for w in range(error_tensor.shape[3]):
-            #                 self.gradient_b[ker]+=error_tensor[batch,ker,h,w]
-            #print(error_tensor.shape)
-            #print(self.weights.shape)
-            #new_weights[batch,ker]=np.rot90(np.rot90(self.weights[]))
-            #new_weights = np.rot90(np.rot90(self.weights))
-            new_weights = np.reshape(new_weights,(self.weights.shape[1],self.weights.shape[0],self.weights.shape[2],self.weights.shape[3]))
-            # for ker in range(self.weights.shape[0]):
-            #     for in_cha in range(self.weights.shape[1]):
-            #         new_weights[ker,in_cha]=np.fliplr(self.weights[ker,in_cha])
-            # new_weights=new_weights.flatten()
+            #create prev_error array
+            self.prev_error=np.zeros(self.input_tensor.shape)
+            #get gradient w.r.t x
+            for batch in range(error_tensor.shape[0]):
+                for input_ch in range(self.input_cha_num):
+                    #stack filters of current input channel of all kernels
+                    temp_weight=np.zeros((self.num_kernels,self.m,self.n))
+                    ind=0
+                    for ker in range(self.num_kernels):
+                        temp_weight[ind]=self.weights[ker,input_ch]
+                    temp_weight=np.rot90(np.rot90(temp_weight))
 
-            #reshaping needed
-            #new_weights.reshape(new_weights,int(self.weights.shape[1]),int(self.weights.shape[0]),int(self.weights.shape[2]),int(self.weights.shape[3]))
-            #print(new_weights.shape)
-            #new_weights=np.reshape(new_weights,(error_tensor.shape[0],self.input_cha_num,error_tensor.shape[2],error_tensor.shape[3]))
+                    #do padding
+                    for out_channel in range(self.input_cha_num):
+                        temp = error_tensor[batch]
+                        pad_height = self.m - 1
+                        pad_width = self.n - 1
 
-            #print(new_weights.shape)
+                        if (pad_height % 2 == 0):
+                            pad_top = pad_height / 2
+                            pad_bottom = pad_height - pad_top
+                        else:
+                            pad_top = np.floor(pad_height / 2)
+                            pad_bottom = pad_top + 1
+                        if (pad_width % 2 == 0):
+                            pad_left = pad_width / 2
+                            pad_right = pad_width - pad_left
+                        else:
+                            pad_left = np.floor(pad_width / 2)
+                            pad_right = pad_left + 1
+
+                        temp2 = np.zeros(
+                            (self.num_kernels, int(temp.shape[1] + pad_height), int(temp.shape[2] + pad_width)))
+                        for channel in range(temp.shape[0]):
+                            temp2[channel] = np.pad(temp[channel],
+                                                    [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
+                                                    mode='constant')
+                    self.prev_error[batch,input_ch] = signal.correlate(temp2, temp_weight, mode='valid')[
+                        0]
+
+
+                    print(self.prev_error[batch,input_ch].shape)
+
+
+
+
+
+
+            self.prev_error=self.prev_error[:,:,::self.stride_shape[0],::self.stride_shape[1]]
 
         else:
             print()
