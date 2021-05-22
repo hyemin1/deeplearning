@@ -243,7 +243,7 @@ class Conv(Base.BaseLayer):
 
 
         return self.prev_error
-        return self.prev_error
+
 
 
 
