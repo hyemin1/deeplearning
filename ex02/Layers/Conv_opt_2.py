@@ -240,6 +240,21 @@ class Conv(Base.BaseLayer):
                                                 [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
                                                 mode='constant')
                     self.prev_error[batch, ker] = signal.convolve(temp2, np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
+                    
+            #pad input tensor
+        pad_size=self.n-1
+        if(pad_size%2==0):
+            pad_first=pad_size/2
+            pad_second =pad_first
+        else:
+            pad_first=np.floor(pad_size/2)
+            pad_second = pad_first+1
+        padded_input = np.zeros((self.input_tensor.shape[0],self.input_cha_num,self.input_tensor.shape[2]+pad_size,self.input_tensor.shape[3]+pad_size))
+
+        for batch in range(self.input_tensor.shape[0]):
+            for in_ch in range(self.input_cha_num):
+                padded_input[batch,in_ch] = np.pad(self.input_tensor[batch,in_ch],[(int(pad_first),int(pad_second)),(int(pad_first),int(pad_second))],mode='constant')
+        #do convolution for gradient w.r.t weights
 
 
         return self.prev_error
