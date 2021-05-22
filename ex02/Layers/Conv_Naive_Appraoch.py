@@ -184,81 +184,82 @@ class Conv(Base.BaseLayer):
 
     def backward(self, error_tensor):
         self.prev_error = np.zeros(self.input_tensor.shape)
-        self.gradient_w = np.zeros(error_tensor.shape)
+
+        num_of_batch = self.input_tensor.shape[0]
+        num_of_channels = error_tensor.shape[1]
+        height = error_tensor.shape[2]
 
         if (self.img_2d == True):
-            self.gradient_b=np.sum(error_tensor, axis=(1, 2, 3), keepdims=True)
-            error_tensor_strided = error_tensor[:,:, :: self.stride_shape[0], :: self.stride_shape[1]]
+            error_tensor_strided = error_tensor[:, :, :: self.stride_shape[0], :: self.stride_shape[1]]
+            width = error_tensor.shape[3]
+            self.gradient_w = np.zeros(num_of_batch, num_of_channels, height, width)
 
-            for batch in range(self.input_tensor.shape[0]):
-                temp = self.input_tensor[batch]
-                for output_channel in range(self.num_kernels):
-                    if ((self.n % 2) == 0):
-                        padding_size = self.n / 2
+            for batch in range(num_of_batch):
+                temp_image = self.input_tensor[batch]
+                for channel in range(num_of_channels):
+                    padding_size, pad_top, pad_bottom, pad_left, pad_right = self.determine_padding_size()
 
-                        if ((padding_size % 2) == 0):
-                            pad_top = int(padding_size / 2)
-                            pad_left = int(padding_size / 2)
+                    padded_input = np.zeros(self.input_cha_num * int(self.input_tensor[2] + padding_size) * int(self.input_tensor[3] + padding_size))
+                    padded_input = np.reshape(padded_input, (self.input_cha_num * int(self.input_tensor[2] + padding_size) * int(self.input_tensor[3] + padding_size)))
 
-                            pad_bottom = (padding_size / 2) - pad_top
-                            pad_right = (padding_size / 2) - pad_top
-                        else:
-                            pad_top = padding_size // 2
-                            pad_left = padding_size // 2
-
-                            pad_pad_bottom = padding_size - pad_top
-                            pad_right = padding_size - pad_top
-                    else:
-                        padding_size = self.n // 2
-                        if ((padding_size % 2) == 0):
-                            pad_top = int(padding_size / 2)
-                            pad_left = int(padding_size / 2)
-
-                            pad_bottom = int((padding_size / 2) - pad_top)
-                            pad_right = int((padding_size / 2) - pad_top)
-                        else:
-                            pad_top, pad_left = padding_size // 2
-                            pad_pad_bottom, pad_right = padding_size - pad_top
-
-                    temp_input = np.zeros(
-                        (self.input_cha_num, int(temp.shape[1] + padding_size), int(temp.shape[2] + padding_size)))
-
-
-                    for channel in range(temp.shape[0]):
-                        temp_input[channel] =  np.pad(temp[channel],
-                                                [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
+                    for temp_channel in range(self.input_cha_num):
+                        padded_input = np.pad(self.input_tensor[batch, temp_channel], [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
                                                 mode='constant')
-                    self.gradient_w[batch, output_channel] = signal.correlate(temp_input, error_tensor[output_channel], mode='valid')[0]
+
+                    self.gradient_w[batch, channel] = signal.correlate(padded_input, error_tensor[channel], mode="valid")[0]
         else:
             error_tensor_strided = error_tensor[:, :, :: self.stride_shape[0]]
+            self.gradient_w = np.zeros(num_of_batch * num_of_channels * height)
+            self.gradient_w = np.reshape(self.gradient_w, (num_of_batch, num_of_channels, height))
 
-            for batch in range(self.input_tensor.shape[0]):
-                temp = self.input_tensor[batch]
-                for output_channel in range(self.num_kernels):
-                    if ((self.convolution_shape % 2) == 0):
-                        padding_size = self.n / 2
+            for batch in range(num_of_batch):
+                for channel in range(num_of_channels):
+                    padding_size, pad_top, pad_bottom = self.determine_padding_size()
 
-                        if ((padding_size % 2) == 0):
-                            pad_top = int(padding_size / 2)
-                            pad_bottom = (padding_size / 2) - pad_top
-                        else:
-                            pad_top = padding_size // 2
-                            pad_bottom = padding_size - pad_top
-                    else:
-                        padding_size = self.n // 2
-                        if ((padding_size % 2) == 0):
-                            pad_top = int(padding_size / 2)
-                            pad_bottom = int((padding_size / 2) - pad_top)
-                        else:
-                            pad_top = padding_size // 2
-                            pad_bottom = padding_size - pad_top
+                    padded_input = np.zeros(self.input_cha_num * int(self.input_tensor.shape[2] + padding_size))
+                    padded_input = np.reshape(padded_input, (self.input_cha_num, self.input_tensor.shape[2] + padding_size))
 
-                    temp_input = np.zeros(
-                        (self.input_cha_num, int(temp.shape[1] + padding_size)))
+                    for temp_channel in range(self.input_cha_num):
+                        padded_input[temp_channel] = np.pad(self.input_tensor[batch, temp_channel],
+                                              [(int(pad_top), int(pad_bottom))],
+                                              mode='constant')
 
-                    for channel in range(temp.shape[0]):
-                        temp_input[channel] = np.pad(temp[channel],
-                                                     [(int(pad_top), int(pad_bottom))],
-                                                     mode='constant')
-                    self.gradient_w[batch, output_channel] = signal.correlate(temp_input, error_tensor[output_channel], mode='valid')[0]
+                    self.gradient_w[batch, channel] = \
+                    signal.correlate(padded_input, error_tensor_strided[channel], mode="valid")[0]
         return self.prev_error
+
+    def determine_padding_size(self):
+        if (self.img_2d == True):
+            if ((self.n % 2) == 0):
+                padding_size = self.n / 2
+            else:
+                padding_size = self.n // 2
+
+            if (padding_size % 2 == 0):
+                pad_top = padding_size / 2
+                pad_bottom = padding_size / 2
+                pad_left = padding_size / 2
+                pad_right = padding_size / 2
+            else:
+                pad_top = padding_size // 2
+                pad_left = padding_size // 2
+
+                pad_right = padding_size - pad_top
+                pad_bottom = padding_size - pad_left
+
+            return (padding_size, pad_top, pad_bottom, pad_left, pad_right)
+
+        else:
+            if ((self.m % 2) == 0):
+                padding_size = self.m / 2
+            else:
+                padding_size = self.m // 2
+
+            if (padding_size % 2 == 0):
+                pad_top = padding_size / 2
+                pad_bottom = padding_size / 2
+            else:
+                pad_top = padding_size // 2
+                pad_bottom = padding_size - pad_top
+
+            return (padding_size, pad_top, pad_bottom)
