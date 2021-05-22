@@ -174,75 +174,75 @@ class Conv(Base.BaseLayer):
 
     def backward(self,error_tensor):
         self.prev_error = np.zeros(self.input_tensor.shape)
-        self.gradient_w=np.zeros(self.weights.shape)
-        
-        if(self.img_2d==True):
-          #calculate gradient w.r.t bias
+        self.gradient_w = np.zeros(self.weights.shape)
+       # print(error_tensor.shape)
+
+        if (self.img_2d == True):
+
+            #calculate gradient w.r.t bias
             #create gradient_b array
             self.gradient_b = np.zeros(self.bias.shape)
             #sum up values of error tensor
             for ker in range(self.num_kernels):
                 self.gradient_b[ker]=np.sum(error_tensor[:,ker,:,:])
-            new_weights = np.zeros(self.weights.shape)
+
             #create prev_error array
-            self.prev_error=np.zeros(self.input_tensor.shape)
-            #get gradient w.r.t x
-            for batch in range(error_tensor.shape[0]):
-                for input_ch in range(self.input_cha_num):
-                    #stack filters of current input channel of all kernels
-                    temp_weight=np.zeros((self.num_kernels,self.m,self.n))
-                    ind=0
+            self.prev_error=np.zeros((error_tensor.shape[0],self.input_cha_num,self.input_tensor.shape[2],self.input_tensor.shape[3]))
+            #create upsampled_error array
+            upsampled_error=np.zeros((error_tensor.shape[0],self.num_kernels,self.input_tensor.shape[2],self.input_tensor.shape[3]))
+            #upsampling: now the upsampled_error has same shape as input_tensor
+
+            for batch in range(self.input_tensor.shape[0]):
+                #for in_ch in range(self.input_cha_num):
                     for ker in range(self.num_kernels):
-                        temp_weight[ind]=self.weights[ker,input_ch]
-                    temp_weight=np.rot90(np.rot90(temp_weight))
+                        for r in range(error_tensor.shape[2]):
+                            for c in range(error_tensor.shape[3]):
+                                #print(upsampled_error.shape)
+                                if(r*self.stride_shape[0]<upsampled_error.shape[2] and c*self.stride_shape[1]<upsampled_error.shape[3]):
 
-                    #do padding
-                    for out_channel in range(self.input_cha_num):
-                        temp = error_tensor[batch]
-                        pad_height = self.m - 1
-                        pad_width = self.n - 1
+                                    upsampled_error[batch,ker,r*self.stride_shape[0],c*self.stride_shape[1]]=error_tensor[batch,ker,r,c]
 
-                        if (pad_height % 2 == 0):
-                            pad_top = pad_height / 2
-                            pad_bottom = pad_height - pad_top
-                        else:
-                            pad_top = np.floor(pad_height / 2)
-                            pad_bottom = pad_top + 1
-                        if (pad_width % 2 == 0):
-                            pad_left = pad_width / 2
-                            pad_right = pad_width - pad_left
-                        else:
-                            pad_left = np.floor(pad_width / 2)
-                            pad_right = pad_left + 1
+            #rearrage kernel
+            new_weights = np.zeros((self.input_cha_num,self.num_kernels,self.m,self.n))
+            for in_ch in range(self.input_cha_num):
+                temp=np.zeros((self.num_kernels,self.m,self.n))
+                for ker in range(self.num_kernels):
+                    temp[ker]=self.weights[ker,in_ch]
+                new_weights[in_ch]=temp
 
-                        temp2 = np.zeros(
-                            (self.num_kernels, int(temp.shape[1] + pad_height), int(temp.shape[2] + pad_width)))
-                        for channel in range(temp.shape[0]):
-                            temp2[channel] = np.pad(temp[channel],
-                                                    [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
-                                                    mode='constant')
-                    self.prev_error[batch,input_ch] = signal.correlate(temp2, temp_weight, mode='valid')[
-                        0]
+            for in_ch in range(self.input_cha_num):
+                for ker in range(self.num_kernels):
+                    new_weights[in_ch,ker]=np.flip(new_weights[in_ch,ker],axis=0)
 
-
-                    print(self.prev_error[batch,input_ch].shape)
-
-
-
-
-
-
-            self.prev_error=self.prev_error[:,:,::self.stride_shape[0],::self.stride_shape[1]]
-
-        else:
-            print()
-            #self.gradient_b = np.sum(error_tensor, axis=(1, 2), keepdims=True)
-            #self.gradient_b = np.sum(error_tensor, axis=0)
-            self.gradient_b=np.zeros(self.bias.shape)
+            #do padding+convolution
             for batch in range(error_tensor.shape[0]):
-                for ker in range(error_tensor.shape[1]):
-                    for h in range(error_tensor.shape[2]):
-                            self.gradient_b[ker]+=error_tensor[batch,ker,h]
+                for ker in range(self.input_cha_num):
+                    temp=upsampled_error[batch]
+                    pad_height = self.m - 1
+                    pad_width = self.n - 1
+
+                    if (pad_height % 2 == 0):
+                        pad_top = pad_height / 2
+                        pad_bottom = pad_height - pad_top
+                    else:
+                        pad_top = np.floor(pad_height / 2)
+                        pad_bottom = pad_top + 1
+                    if (pad_width % 2 == 0):
+                        pad_left = pad_width / 2
+                        pad_right = pad_width - pad_left
+                    else:
+                        pad_left = np.floor(pad_width / 2)
+                        pad_right = pad_left + 1
+                    temp2 = np.zeros(
+                        (self.num_kernels, int(temp.shape[1] + pad_height), int(temp.shape[2] + pad_width)))
+                    for channel in range(temp.shape[0]):
+                        temp2[channel] = np.pad(temp[channel],
+                                                [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
+                                                mode='constant')
+                    self.prev_error[batch, ker] = signal.convolve(temp2, np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
+
+
+        return self.prev_error
         return self.prev_error
 
 
