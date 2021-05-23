@@ -255,6 +255,23 @@ class Conv(Base.BaseLayer):
             for in_ch in range(self.input_cha_num):
                 padded_input[batch,in_ch] = np.pad(self.input_tensor[batch,in_ch],[(int(pad_first),int(pad_second)),(int(pad_first),int(pad_second))],mode='constant')
         #do convolution for gradient w.r.t weights
+        
+                for batch in range(self.input_tensor.shape[0]):
+            for ker in range(self.num_kernels):
+                temp_ker= np.zeros((self.input_cha_num,self.m,self.n))
+                for in_ch in range(self.input_cha_num):
+                    temp=signal.correlate(padded_input[batch,in_ch],upsampled_error[batch,ker],mode='valid')
+                    temp_ker[in_ch]=temp
+
+                self.gradient_w[ker]+=temp_ker[int(self.input_cha_num/2)]
+
+            #self.gradient_w[ker]=temp_ker
+
+        #update bias&weights
+        if(self._optimizer_b!=None):
+            self.bias = self._optimizer_b.calculate_update(self.bias, self.gradient_b)
+        if(self._optimizer_w!=None):
+            self.weights = self._optimizer_w.calculate_update(self.weights,self.gradient_w)
 
 
         return self.prev_error
