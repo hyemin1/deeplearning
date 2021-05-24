@@ -16,8 +16,10 @@ class FullyConnected(Base.BaseLayer):
         self.weights = np.reshape(self.weights, (self.input_size+1, self.output_size))
 
     def initialize(self, weights_initializer, bias_initializer):
-        weights_initializer.fan_in = self.input_size
-        weights_initializer.fan_out = self.output_size
+        # weights_initializer.fan_in = self.input_size
+        # weights_initializer.fan_out = self.output_size
+        self.weights[0:-1,:]=weights_initializer.initialize((self.input_size,self.output_size),self.input_size,self.output_size)
+        self.weights[-1]=bias_initializer.initialize((1,self.output_size),self.input_size,self.output_size)
 
     @property
     def optimizer(self):
