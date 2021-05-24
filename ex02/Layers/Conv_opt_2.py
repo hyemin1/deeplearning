@@ -6,80 +6,85 @@ from scipy import signal
 from Layers import Initializers
 from PIL import Image
 import copy
+
+
 class Conv(Base.BaseLayer):
-    def __init__(self,stride_shape,convolution_shape,num_kernels):
+    def __init__(self, stride_shape, convolution_shape, num_kernels):
         super().__init__()
-        self.trainable=True
-        self.weights=None
-        self.bias=None
-        self.stride_shape=stride_shape
-        self.convolution_shape = convolution_shape#shape for convolution
-        self.num_kernels = num_kernels #total number of kernels
-        #optimizer to update wdight
-        self.opt_w=None
-        #optimizer to update bias
-        self.opt_b=None
-        self.img_2d=False
+        self.trainable = True
+        self.weights = None
+        self.bias = None
+        self.stride_shape = stride_shape
+        self.convolution_shape = convolution_shape  # shape for convolution
+        self.num_kernels = num_kernels  # total number of kernels
+        # optimizer to update wdight
+        self._optimizer_w = None
+        # optimizer to update bias
+        self._optimizer_b= None
+        self.img_2d = False
 
-        #number of input channels
-        self.input_cha_num=self.convolution_shape[0]
+        # number of input channels
+        self.input_cha_num = self.convolution_shape[0]
 
-        #in 1D: length of array, in 2D: height of matrix
-        self.m=self.convolution_shape[1]
+        # in 1D: length of array, in 2D: height of matrix
+        self.m = self.convolution_shape[1]
 
-        #in case of 2D input
-        if (len(convolution_shape)==3):
-            self.img_2d=True
-            #width of matrix
-            self.n=self.convolution_shape[2]
-            #initialize weights using given kernel shape
-            self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m*self.n))
-            self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m,self.n))
-            #initialize bias
-            #self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
-            #self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num, self.m, self.n))
-            self.bias= np.random.uniform(0,1,(self.num_kernels))
-            #self.bias = np.reshape(self.bias,(self.num_kernels,self.input_cha_num))
-        #in case of 1D input
+        # in case of 2D input
+        if (len(convolution_shape) == 3):
+            self.img_2d = True
+            # width of matrix
+            self.n = self.convolution_shape[2]
+            # initialize weights using given kernel shape
+            self.weights = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
+            self.weights = np.reshape(self.weights, (self.num_kernels, self.input_cha_num, self.m, self.n))
+            # initialize bias
+            # self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
+            # self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num, self.m, self.n))
+            self.bias = np.random.uniform(0, 1, (self.num_kernels))
+            # self.bias = np.reshape(self.bias,(self.num_kernels,self.input_cha_num))
+        # in case of 1D input
         else:
             # initialize weights using given kernel shape
-            self.weights=np.random.uniform(0,1,(self.num_kernels*self.input_cha_num*self.m))
-            self.weights=np.reshape(self.weights,(self.num_kernels,self.input_cha_num,self.m))
-            #initialize bias
-            #self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
+            self.weights = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
+            self.weights = np.reshape(self.weights, (self.num_kernels, self.input_cha_num, self.m))
+            # initialize bias
+            # self.bias = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
             self.bias = np.random.uniform(0, 1, (self.num_kernels))
-            #self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num))
+            # self.bias = np.reshape(self.bias, (self.num_kernels, self.input_cha_num))
 
     @property
     def gradient_weights(self):
         return self.gradient_w
+
     @property
     def gradient_bias(self):
         return self.gradient_b
+
     @property
     def optimizer(self):
         return self._optimizer
+
     @optimizer.setter
-    def optimizer(self,opt):
-        self._optimizer=copy.deepcopy(opt)
+    def optimizer(self, opt):
+        self._optimizer_b = copy.deepcopy(opt)
+        self._optimizer_w = copy.deepcopy(opt)
+    # should be corrected
+    def initialize(self, weights_initializer, bias_initializer):
 
-    #should be corrected
-    def initialize(self,weights_initializer,bias_initializer):
+        if (self.img_2d == True):
+            self.fan_in = self.input_cha_num * self.m * self.n
+            self.fan_out = self.num_kernels * self.m * self.n
 
-        if(self.img_2d==True):
-            self.fan_in = self.input_cha_num*self.m*self.n
-            self.fan_out = self.num_kernels*self.m*self.n
-
-            self.weights=weights_initializer.initialize(self.weights.shape,self.fan_in,self.fan_out)
-            self.bias=bias_initializer.initialize(self.bias.shape,self.fan_in,self.fan_out)
+            self.weights = weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
+            self.bias = bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
         else:
             self.fan_in = self.input_cha_num * self.m
             self.fan_out = self.num_kernels * self.m
 
-            self.weights=weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
-            self.bias=bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
+            self.weights = weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
+            self.bias = bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
 
-    def forward(self,input_tensor):
+    def forward(self, input_tensor):
         """
         implementation step
         0. set input layout
@@ -91,23 +96,15 @@ class Conv(Base.BaseLayer):
         """
         0. set input layout
         """
-        self.input_tensor=input_tensor
-        #number of batches
-        b=input_tensor.shape[0]
-        #set dimension(number of input channels per batch)
-        self.c= input_tensor.shape[1]
-        #spatial dimension
-        #in 1D: length of array, in 2D: height of matrix
+        self.input_tensor = input_tensor
+        # number of batches
+        b = input_tensor.shape[0]
+        # set dimension(number of input channels per batch)
+        self.c = input_tensor.shape[1]
+        # spatial dimension
+        # in 1D: length of array, in 2D: height of matrix
         y = input_tensor.shape[2]
-        #in 2D
-        if(self.img_2d==True):
-            #width of matrix
-            x = input_tensor.shape[3]
-
-        """
-        1. calculate the output tensor shape
-        2. do zero padding
-        """
+        # in 2D
         if (self.img_2d == True):
             # width of matrix
             x = input_tensor.shape[3]
@@ -144,7 +141,7 @@ class Conv(Base.BaseLayer):
                                                 [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
                                                 mode='constant')
                     self.output_tensor[batch, out_channel] = signal.correlate(temp2, self.weights[out_channel], mode='valid')[0] + self.bias[out_channel]
-
+            self.before_stride=self.output_tensor
             self.output_tensor=self.output_tensor[:,:,::self.stride_shape[0],::self.stride_shape[1]]
 
         else:
@@ -165,14 +162,14 @@ class Conv(Base.BaseLayer):
                         temp2[channel] = np.pad(temp[channel],
                                                 [(int(pad_top), int(pad_bottom))],
                                                 mode='constant')
-            self.output_tensor[batch, out_channel] = signal.correlate(temp2, self.weights[out_channel], mode='valid')[
+                    self.output_tensor[batch, out_channel] = signal.correlate(temp2, self.weights[out_channel], mode='valid')[
                                                          0] + self.bias[out_channel]
-
+            self.before_stride=self.output_tensor
             self.output_tensor = self.output_tensor[:, :, ::self.stride_shape[0]]
+
         return self.output_tensor
 
-
-    def backward(self,error_tensor):
+    def backward(self, error_tensor):
         self.prev_error = np.zeros(self.input_tensor.shape)
         self.gradient_w = np.zeros(self.weights.shape)
        # print(error_tensor.shape)
@@ -290,7 +287,6 @@ class Conv(Base.BaseLayer):
 
 
         return self.prev_error
-
 
 
 
