@@ -201,7 +201,8 @@ class Conv(Base.BaseLayer):
                                 if(r*self.stride_shape[0]<upsampled_error.shape[2] and c*self.stride_shape[1]<upsampled_error.shape[3]):
 
                                     upsampled_error[batch,ker,r*self.stride_shape[0],c*self.stride_shape[1]]=error_tensor[batch,ker,r,c]
-
+                                else:
+                                    print("not found")
             #rearrage kernel
             new_weights = np.zeros((self.input_cha_num,self.num_kernels,self.m,self.n))
             for in_ch in range(self.input_cha_num):
@@ -209,10 +210,11 @@ class Conv(Base.BaseLayer):
                 for ker in range(self.num_kernels):
                     temp[ker]=self.weights[ker,in_ch]
                 new_weights[in_ch]=temp
-
+            #flip spatial space
             for in_ch in range(self.input_cha_num):
                 for ker in range(self.num_kernels):
                     new_weights[in_ch,ker]=np.flip(new_weights[in_ch,ker],axis=0)
+
 
             #do padding+convolution
             for batch in range(error_tensor.shape[0]):
@@ -240,32 +242,45 @@ class Conv(Base.BaseLayer):
                                                 [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
                                                 mode='constant')
                     self.prev_error[batch, ker] = signal.convolve(temp2, np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
-                    
-            #pad input tensor
-        pad_size=self.n-1
+
+        #pad input tensor
+
+        pad_size=self.weights.shape[3]-1
+        total = self.input_tensor.shape[3] + pad_size
+
+        pad_height=self.weights.shape[3]-1
+        if(self.stride_shape[0]>self.stride_shape[1]):
+            pad_height=pad_size-self.stride_shape[0]
+        total_2 = self.input_tensor.shape[2]+pad_height
         if(pad_size%2==0):
             pad_first=pad_size/2
             pad_second =pad_first
         else:
             pad_first=np.floor(pad_size/2)
             pad_second = pad_first+1
-        padded_input = np.zeros((self.input_tensor.shape[0],self.input_cha_num,self.input_tensor.shape[2]+pad_size,self.input_tensor.shape[3]+pad_size))
 
+        if (pad_height % 2 == 0):
+            pad_top = pad_height / 2
+            pad_bottom = pad_top
+        else:
+            pad_top = np.floor(pad_height / 2)
+            pad_bottom = pad_top + 1
+        padded_input = np.zeros((self.input_tensor.shape[0],self.input_cha_num,total_2,total))
+        print(padded_input.shape)
         for batch in range(self.input_tensor.shape[0]):
             for in_ch in range(self.input_cha_num):
-                padded_input[batch,in_ch] = np.pad(self.input_tensor[batch,in_ch],[(int(pad_first),int(pad_second)),(int(pad_first),int(pad_second))],mode='constant')
+                padded_input[batch,in_ch] = np.pad(self.input_tensor[batch,in_ch],[(int(pad_top),int(pad_bottom)),(int(pad_first),int(pad_second))],mode='constant')
         #do convolution for gradient w.r.t weights
-        
-                for batch in range(self.input_tensor.shape[0]):
+
+        self.gradient_w_prob=np.zeros((self.num_kernels,self.input_cha_num,np.abs(len(padded_input[0,0])-len(upsampled_error[0,0]))+1,np.abs(len(padded_input[0,0,0])-len(upsampled_error[0,0,0]))+1))
+
+        for batch in range(self.input_tensor.shape[0]):
             for ker in range(self.num_kernels):
-                temp_ker= np.zeros((self.input_cha_num,self.m,self.n))
                 for in_ch in range(self.input_cha_num):
-                    temp=signal.correlate(padded_input[batch,in_ch],upsampled_error[batch,ker],mode='valid')
-                    temp_ker[in_ch]=temp
+                    temp=signal.correlate2d(padded_input[batch,in_ch],upsampled_error[batch,ker],mode='valid')
+                    self.gradient_w_prob[ker,in_ch]+=temp
 
-                self.gradient_w[ker]+=temp_ker[int(self.input_cha_num/2)]
-
-            #self.gradient_w[ker]=temp_ker
+        self.gradient_w=self.gradient_w_prob
 
         #update bias&weights
         if(self._optimizer_b!=None):
