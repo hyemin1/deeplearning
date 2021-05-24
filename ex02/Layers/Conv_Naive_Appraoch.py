@@ -19,7 +19,8 @@ class Conv(Base.BaseLayer):
         self.opt_b = None
         self.img_2d = False
 
-        self._optimizer = None
+        self._optimizer_b = None
+        self._optimizer_w=None
 
         # number of input channels
         self.input_cha_num = self.convolution_shape[0]
@@ -53,7 +54,8 @@ class Conv(Base.BaseLayer):
 
     @optimizer.setter
     def optimizer(self, opt):
-        self._optimizer = copy.deepcopy(opt)
+        self._optimizer_b = copy.deepcopy(opt)
+        self._optimizer_w=copy.deepcopy(opt)
 
     # should be corrected
     def initialize(self, weights_initializer, bias_initializer):
@@ -206,10 +208,10 @@ class Conv(Base.BaseLayer):
                     signal.convolve(temp2, np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
 
             self.gradient_w = self.find_gradient_weights(upsampled_error)
-            if (self._optimizer != None):
-                self.bias = self._optimizer.calculate_update(self.bias, self.gradient_b)
-            if (self._optimizer != None):
-                self.weights = self._optimizer.calculate_update(self.weights, self.gradient_w)
+            if (self._optimizer_b != None):
+                self.bias = self._optimizer_b.calculate_update(self.bias, self.gradient_b)
+            if (self._optimizer_w != None):
+                self.weights = self._optimizer_w.calculate_update(self.weights, self.gradient_w)
 
         else:
             upsampled_error = self.find_upsampled_error(error_tensor)
