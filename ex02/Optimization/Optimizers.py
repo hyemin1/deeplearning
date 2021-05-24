@@ -35,9 +35,11 @@ class Adam:
     def calculate_update(self,weight_tensor,gradient_tensor):
         self.t=self.t+1
         self.g = gradient_tensor
-        self.velocity=self.mu*self.velocity+(1-self.mu)*self.g
+        self.velocity=self.mu*self.velocity+np.multiply((1-self.mu),self.g)
         self.velocityb = self.velocity/(1-(self.mu**self.t))
-        self.r = self.rho*self.r + np.multiply((1-self.rho)*self.g,self.g)
+        self.r = self.rho*self.r + (1-self.rho)*self.g**2
         self.rb = self.r/(1-(self.rho**self.t))
-        updated_weight = weight_tensor - self.learning_rate*(self.velocityb/(math.sqrt(self.rb)+np.finfo(float).eps))
+
+        updated_weight = np.zeros(weight_tensor.shape)
+        updated_weight = np.subtract(weight_tensor,np.multiply(self.learning_rate,(self.velocityb/(np.sqrt(self.rb)+np.finfo(float).eps))))
         return updated_weight
