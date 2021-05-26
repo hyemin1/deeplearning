@@ -40,6 +40,5 @@ class Adam:
         self.r = self.rho*self.r + (1-self.rho)*self.g**2
         self.rb = self.r/(1-(self.rho**self.t))
 
-        updated_weight = np.zeros(weight_tensor.shape)
         updated_weight = np.subtract(weight_tensor,np.multiply(self.learning_rate,(self.velocityb/(np.sqrt(self.rb)+np.finfo(float).eps))))
         return updated_weight
