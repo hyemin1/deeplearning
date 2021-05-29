@@ -25,37 +25,39 @@ class Pooling(Base.BaseLayer):
         #width
         self.width = input_tensor.shape[3]
 
-        #calsulate output shape
+        #calculate output shape
         out_height = int((self.height - self.k_height) / self.s_height) + 1
         out_width = int((self.width - self.k_width) / self.s_width) + 1
+
         #create output
         self.output = np.zeros((self.b,self.input_channel,out_height,out_width))
         #store indices of max values
-        self.max_matrix = np.zeros((self.b,self.input_channel,out_height,out_width))
+
         #for every batch
         for batch in range(self.b):
             #for all input channels per batch
             for channel in range(self.input_channel):
                 # apply max pooling for all values of 2D matrix
-                for h in range(out_height):
+                for r in range(out_height):
                     #set the starting and endpoint of row
-                    height_ker_start = h * self.s_height
-                    height_ker_end = height_ker_start + self.k_height
+                    row_kerstart = r * self.s_height
+                    row_kerend = row_kerstart + self.k_height
 
-                    for w in range(out_width):
-                        width_ker_start = w * self.s_width
-                        width_ker_end = width_ker_start + self.k_width
+                    for c in range(out_width):
+                        col_kerstart = c * self.s_width
+                        col_kerend = col_kerstart + self.k_width
 
                         #sotre the vale of max value of sub-region(calculated using starting points & polling matrix&stride)
-                        self.output[batch, channel, h, w] = np.max(input_tensor[batch, channel, height_ker_start:height_ker_end, width_ker_start:width_ker_end])
+                        self.output[batch, channel, r, c] = np.max(input_tensor[batch, channel, row_kerstart:row_kerend, col_kerstart:col_kerend])
 
         return self.output
 
     def backward(self,error_tensor):
 
         #calculate the height& width of upsampled matrix
-        sample_height = int((self.height - self.k_height) / self.s_height) + 1
-        sample_width = int((self.width - self.k_width) / self.s_width) + 1
+        # upsample_height = int((self.height - self.k_height) / self.s_height) + 1
+        # upsample_width = int((self.width - self.k_width) / self.s_width) + 1
+
 
         #create up-sampled tensor
         upsampled = np.zeros((self.b,self.input_channel,self.height,self.width))
@@ -64,20 +66,21 @@ class Pooling(Base.BaseLayer):
             #for all channels per batch
             for channel in range(self.input_channel):
                 #for all 2D matrix
-                for h in range(sample_height):
+                for r in range(error_tensor.shape[2]):
                     # set the starting and endpoint of row
-                    height_ker_start = h * self.s_height
-                    height_ker_end = height_ker_start + self.k_height
-                    for w in range(sample_width):
-                        width_ker_start = w * self.s_width
-                        width_ker_end = width_ker_start + self.k_width
+                    row_ker_start = r * self.s_height
+                    row_ker_end = row_ker_start + self.k_height
+                    for c in range(error_tensor.shape[3]):
+                        col_ker_start = c * self.s_width
+                        col_ker_end = col_ker_start + self.k_width
 
                         #get the sub-region of input tensor using pooling shape and starting point
-                        subset = self.input_tensor[batch, channel, height_ker_start:height_ker_end, width_ker_start:width_ker_end]
+                        subset = self.input_tensor[batch, channel, row_ker_start:row_ker_end, col_ker_start:col_ker_end]
                         #get the max. value of that sub-region
                         #if the pixel value is equal to the max. value, add the value of error tensor
                         #if not, 0 will be added
                         #as same pixels can be included more than 1 times, use addition
-                        upsampled[batch, channel, height_ker_start:height_ker_end, width_ker_start:width_ker_end] += (subset == np.max(subset)) * error_tensor[batch, channel, h, w]
+                        upsampled[batch, channel, row_ker_start:row_ker_end, col_ker_start:col_ker_end] += (subset == np.max(subset)) * error_tensor[batch, channel, r, c]
 
         return upsampled
+
