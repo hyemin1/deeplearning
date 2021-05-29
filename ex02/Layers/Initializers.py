@@ -5,6 +5,7 @@ class Constant:
         self.weight_constant = weight_constant
 
     def initialize(self, weights_shape, fan_in, fan_out):
+        #initialize weight matrix with a constant value
         final_weights = np.full(weights_shape,self.weight_constant)
         return final_weights
 
@@ -13,18 +14,11 @@ class UniformRandom:
         pass
 
     def initialize(self, weights_shape, fan_in, fan_out):
-        if (len(weights_shape)==4):
-            final_weights=np.zeros((weights_shape[0],weights_shape[1],weights_shape[2],weights_shape[3]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker,channel]=np.random.uniform(0, 1, (weights_shape[2] , weights_shape[3]))
-        elif(len(weights_shape)==3):
-            final_weights = np.zeros((weights_shape[0], weights_shape[1], weights_shape[2]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker, channel] = np.random.uniform(0, 1, (weights_shape[2]))
-        else:
-            final_weights = np.random.uniform(0, 1, ((weights_shape[0] , weights_shape[1])))
+        #initialize weights with uniformly distributed values
+        #create matrix
+        final_weights=np.zeros(weights_shape)
+        #fill values
+        final_weights=np.random.uniform(0,1,(weights_shape))
 
         return final_weights
 
@@ -33,20 +27,13 @@ class Xavier:
         pass
 
     def initialize(self, weights_shape, fan_in, fan_out):
+        #Xavier initialization: scale variance using fan_int & fan_out
+        #calculate variance
         sigma = np.sqrt(2) / np.sqrt(fan_out + fan_in)
-
-        if (len(weights_shape)==4):
-            final_weights=np.zeros((weights_shape[0],weights_shape[1],weights_shape[2],weights_shape[3]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker,channel]=np.random.normal(0, sigma, (weights_shape[2] , weights_shape[3]))
-        elif(len(weights_shape)==3):
-            final_weights = np.zeros((weights_shape[0], weights_shape[1], weights_shape[2]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker, channel] = np.random.normal(0, sigma, (weights_shape[2]))
-        else:
-            final_weights = np.random.normal(0, sigma, ((weights_shape[0] , weights_shape[1])))
+        #create matrix
+        final_weights=np.zeros(weights_shape)
+        #fill final_weight with normally distributed values
+        final_weights=np.random.normal(0,sigma,(weights_shape))
         return final_weights
 
 class He:
@@ -54,19 +41,9 @@ class He:
         pass
 
     def initialize(self, weights_shape, fan_in, fan_out):
+        #He initialization
         sigma = np.sqrt(2 / fan_in)
-
-        if (len(weights_shape)==4):
-            final_weights=np.zeros((weights_shape[0],weights_shape[1],weights_shape[2],weights_shape[3]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker,channel]=np.random.normal(0, sigma, (weights_shape[2] , weights_shape[3]))
-        elif(len(weights_shape)==3):
-            final_weights = np.zeros((weights_shape[0], weights_shape[1], weights_shape[2]))
-            for ker in range(weights_shape[0]):
-                for channel in range(weights_shape[1]):
-                    final_weights[ker, channel] = np.random.normal(0, sigma, (weights_shape[2]))
-        else:
-            final_weights = np.random.normal(0, sigma, ((weights_shape[0] , weights_shape[1])))
+        final_weights=np.zeros(weights_shape)
+        final_weights=np.random.normal(0,sigma,(weights_shape))
 
         return final_weights
