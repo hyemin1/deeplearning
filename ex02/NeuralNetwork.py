@@ -26,9 +26,7 @@ class NeuralNetwork():
 
     def append_layer(self,layer):
         if layer.trainable==True:
-            layer._optimizer = copy.deepcopy(self.optimizer)
-            #weights_shape = (len(layer.weights), len(layer.weights[0]))
-            #initialized_weights = np.full(shape=weights_shape, fill_value=self.bias_initializer.weight_constant)
+            layer.optimizer = copy.deepcopy(self.optimizer)
             #layer.weights = initialized_weights
             layer.initialize(self.weights_initializer,self.bias_initializer)
 
