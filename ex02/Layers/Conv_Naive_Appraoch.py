@@ -214,12 +214,10 @@ class Conv(Base.BaseLayer):
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                          np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1,
                                          np.abs(len(padded_input[0, 0, 0]) - len(upsampled_error[0, 0, 0])) + 1))
-
-            for batch in range(self.input_tensor.shape[0]):
-                for ker in range(self.num_kernels):
-                    for in_ch in range(self.input_cha_num):
-                        temp = signal.correlate2d(padded_input[batch, in_ch], upsampled_error[batch, ker], mode='valid')
-                        temp_gradient_w[ker, in_ch] += temp
+            for ker in range(self.num_kernels):
+                for in_ch in range(self.input_cha_num):
+                    temp = signal.correlate(padded_input[:, in_ch], upsampled_error[:, ker], mode='valid')[0]
+                    temp_gradient_w[ker, in_ch] += temp
 
         else:
             pad_size = self.weights.shape[2] - 1
@@ -237,16 +235,12 @@ class Conv(Base.BaseLayer):
 
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                         np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1))
-
-            for batch in range(self.input_tensor.shape[0]):
-                for ker in range(self.num_kernels):
-                    for in_ch in range(self.input_cha_num):
-                        temp = signal.correlate(padded_input[batch, in_ch], upsampled_error[batch, ker], mode='valid')
-                        temp_gradient_w[ker, in_ch] += temp
-
+            for ker in range(self.num_kernels):
+                for in_ch in range(self.input_cha_num):
+                    temp = signal.correlate(padded_input[:, in_ch], upsampled_error[:, ker], mode='valid')[0]
+                    temp_gradient_w[ker, in_ch] += temp
 
         return temp_gradient_w
-
 
     def find_upsampled_error(self, error_tensor):
         if (self.img_2d):
