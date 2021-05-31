@@ -100,10 +100,15 @@ class Conv(Base.BaseLayer):
         self.gradient_w = np.zeros(self.weights.shape)
 
         if (self.img_2d == True):
+            """
+            1. gradient w.r.t. bias
+            """
             self.gradient_b = np.zeros(self.bias.shape)
             for ker in range(self.num_kernels):
                 self.gradient_b[ker] = np.sum(error_tensor[:, ker, :, :])
-
+            """
+            2. gradient w.r.t. previous layer
+            """
             self.prev_error = np.zeros(
                 (error_tensor.shape[0], self.input_cha_num, self.input_tensor.shape[2], self.input_tensor.shape[3]))
 
@@ -127,16 +132,62 @@ class Conv(Base.BaseLayer):
                 for ker in range(self.input_cha_num):
                     self.prev_error[batch, ker] = \
                     signal.convolve(self.find_padded_input(upsampled_error)[batch], np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
-
+            """
+            3. gradient w.r.t weights
+            """
             self.gradient_w = self.find_gradient_weights(upsampled_error)
+            """
+            4. update weight & bias optimizer
+            """
             if (self._optimizer_b != None):
                 self.bias = self._optimizer_b.calculate_update(self.bias, self.gradient_b)
             if (self._optimizer_w != None):
                 self.weights = self._optimizer_w.calculate_update(self.weights, self.gradient_w)
 
         else:
+            """1. gradient w.r.t. bias """
+            self.gradient_b = np.zeros(self.bias.shape)
+            for ker in range(self.num_kernels):
+                self.gradient_b[ker] = np.sum(error_tensor[:, ker, :])
+            """
+            2. gradient w.r.t previous layer
+            """
+            self.prev_error = np.zeros(
+                (error_tensor.shape[0], self.input_cha_num, self.input_tensor.shape[2]))
+
             upsampled_error = self.find_upsampled_error(error_tensor)
+
+            # rearrage kernel
+            new_weights = np.zeros((self.input_cha_num, self.num_kernels, self.m))
+            for in_ch in range(self.input_cha_num):
+                temp = np.zeros((self.num_kernels, self.m))
+                for ker in range(self.num_kernels):
+                    temp[ker] = self.weights[ker, in_ch]
+                new_weights[in_ch] = temp
+            # flip spatial space
+            # new_weights[:,:] = np.flip(new_weights[:,:], axis= 0)
+            for in_ch in range(self.input_cha_num):
+                for ker in range(self.num_kernels):
+                    new_weights[in_ch, ker] = np.flip(new_weights[in_ch, ker], axis=0)
+
+            # do padding+convolution
+            for batch in range(error_tensor.shape[0]):
+                for ker in range(self.input_cha_num):
+                    self.prev_error[batch, ker] = \
+                        signal.convolve(self.find_padded_input(upsampled_error)[batch],
+                                        np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
+            """
+            3.gradient w.r.t. weights
+            """
             self.gradient_w = self.find_gradient_weights(upsampled_error)
+            """
+            4. update bias & weight optimizer
+            """
+            if (self._optimizer_b != None):
+                self.bias = self._optimizer_b.calculate_update(self.bias, self.gradient_b)
+            if (self._optimizer_w != None):
+                self.weights = self._optimizer_w.calculate_update(self.weights, self.gradient_w)
+
 
         return self.prev_error
 
