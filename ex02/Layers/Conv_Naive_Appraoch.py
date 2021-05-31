@@ -208,12 +208,8 @@ class Conv(Base.BaseLayer):
                 pad_top = np.floor(pad_height / 2)
                 pad_bottom = pad_top + 1
             padded_input = np.zeros((self.input_tensor.shape[0], self.input_cha_num, total_2, total))
-
-            for batch in range(self.input_tensor.shape[0]):
-                for in_ch in range(self.input_cha_num):
-                    padded_input[batch, in_ch] = np.pad(self.input_tensor[batch, in_ch],
-                                                        [(int(pad_top), int(pad_bottom)),
-                                                         (int(pad_first), int(pad_second))], mode='constant')
+            padded_input = np.pad(self.input_tensor, [(0,0), (0,0), (int(pad_top), int(pad_bottom)), (int(pad_first), int(pad_second))],
+                                  mode='constant')
 
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                          np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1,
@@ -237,11 +233,7 @@ class Conv(Base.BaseLayer):
                 pad_bottom = pad_top + 1
 
             padded_input = np.zeros((self.input_tensor.shape[0], self.input_cha_num, total))
-
-            for batch in range(self.input_tensor.shape[0]):
-                for in_ch in range(self.input_cha_num):
-                    padded_input[batch, in_ch] = np.pad(self.input_tensor[batch, in_ch],
-                                                        [(int(pad_top), int(pad_bottom))], mode='constant')
+            padded_input = np.pad(self.input_tensor,[(0,0), (0,0), (int(pad_top), int(pad_bottom))], mode='constant')
 
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                         np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1))
