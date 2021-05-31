@@ -10,33 +10,29 @@ class Conv(Base.BaseLayer):
         self.weights = None
         self.bias = None
         self.stride_shape = stride_shape
-        self.convolution_shape = convolution_shape  # shape for convolution
-        self.num_kernels = num_kernels  # total number of kernels
-        # optimizer to update wdight
+        self.convolution_shape = convolution_shape
+        self.num_kernels = num_kernels
+
         self.opt_w = None
-        # optimizer to update bias
         self.opt_b = None
+
         self.img_2d = False
 
         self._optimizer_b = None
         self._optimizer_w=None
 
-        # number of input channels
         self.input_cha_num = self.convolution_shape[0]
 
-        # in 1D: length of array, in 2D: height of matrix
         self.m = self.convolution_shape[1]
 
         # in case of 2D input
         if (len(convolution_shape) == 3):
             self.img_2d = True
             self.n = self.convolution_shape[2]
-            self.weights = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m * self.n))
-            self.weights = np.reshape(self.weights, (self.num_kernels, self.input_cha_num, self.m, self.n))
+            self.weights = np.random.uniform(0, 1, ((self.num_kernels, self.input_cha_num, self.m, self.n)))
             self.bias = np.random.uniform(0, 1, (self.num_kernels))
         else:
-            self.weights = np.random.uniform(0, 1, (self.num_kernels * self.input_cha_num * self.m))
-            self.weights = np.reshape(self.weights, (self.num_kernels, self.input_cha_num, self.m))
+            self.weights = np.random.uniform(0, 1, ((self.num_kernels, self.input_cha_num, self.m)))
             self.bias = np.random.uniform(0, 1, (self.num_kernels))
 
     @property
@@ -77,47 +73,26 @@ class Conv(Base.BaseLayer):
         b = input_tensor.shape[0]
         self.c = input_tensor.shape[1]
         y = input_tensor.shape[2]
-        # in 2D
         if (self.img_2d == True):
-            # width of matrix
             x = input_tensor.shape[3]
-
-        """
-        1. calculate the output tensor shape
-        2. do zero padding
-        """
-        if (self.img_2d == True):
             self.output_tensor = np.zeros((b, self.num_kernels, y, x))
+        else:
+            self.output_tensor = np.zeros((b, self.num_kernels, y))
+
+        if (self.img_2d == True):
             for batch in range(b):
                 for out_channel in range(self.num_kernels):
-                    temp = self.input_tensor[batch]
-                    pad_height, pad_width, pad_top, pad_bottom, pad_left, pad_right = self.determine_padding_size()
-                    temp2 = np.zeros(
-                        (self.input_cha_num, int(temp.shape[1] + pad_height), int(temp.shape[2] + pad_width)))
-                    for channel in range(temp.shape[0]):
-                        temp2[channel] = np.pad(temp[channel],
-                                                [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
-                                                mode='constant')
-                    self.output_tensor[batch, out_channel] = signal.correlate(temp2, self.weights[out_channel], mode='valid')[0] + self.bias[out_channel]
-
+                    self.output_tensor[batch, out_channel] = signal.correlate(self.find_padded_input(self.input_tensor)[batch],
+                                                                              self.weights[out_channel], mode='valid')[0] + self.bias[out_channel]
             self.output_tensor = self.output_tensor[:, :, ::self.stride_shape[0], ::self.stride_shape[1]]
 
         else:
-            self.output_tensor = np.zeros((b, self.num_kernels, y))
             for batch in range(b):
                 for out_channel in range(self.num_kernels):
-                    temp = self.input_tensor[batch]
-                    pad_height, pad_top, pad_bottom = self.determine_padding_size()
-                    temp2 = np.zeros(
-                        (self.input_cha_num, int(temp.shape[1] + pad_height)))
-                    for channel in range(temp.shape[0]):
-                        temp2[channel] = np.pad(temp[channel],
-                                                [(int(pad_top), int(pad_bottom))],
-                                                mode='constant')
-                    self.output_tensor[batch, out_channel] = signal.correlate(temp2, self.weights[out_channel], mode='valid')[
-                                                         0] + self.bias[out_channel]
-
+                    self.output_tensor[batch, out_channel] = signal.correlate(self.find_padded_input(self.input_tensor)[batch],
+                                                                              self.weights[out_channel], mode='valid')[0] + self.bias[out_channel]
             self.output_tensor = self.output_tensor[:, :, ::self.stride_shape[0]]
+
         return self.output_tensor
 
     def backward(self, error_tensor):
@@ -125,7 +100,6 @@ class Conv(Base.BaseLayer):
         self.gradient_w = np.zeros(self.weights.shape)
 
         if (self.img_2d == True):
-
             self.gradient_b = np.zeros(self.bias.shape)
             for ker in range(self.num_kernels):
                 self.gradient_b[ker] = np.sum(error_tensor[:, ker, :, :])
@@ -143,6 +117,7 @@ class Conv(Base.BaseLayer):
                     temp[ker] = self.weights[ker, in_ch]
                 new_weights[in_ch] = temp
             # flip spatial space
+            # new_weights[:,:] = np.flip(new_weights[:,:], axis= 0)
             for in_ch in range(self.input_cha_num):
                 for ker in range(self.num_kernels):
                     new_weights[in_ch, ker] = np.flip(new_weights[in_ch, ker], axis=0)
@@ -150,16 +125,8 @@ class Conv(Base.BaseLayer):
             # do padding+convolution
             for batch in range(error_tensor.shape[0]):
                 for ker in range(self.input_cha_num):
-                    temp = upsampled_error[batch]
-                    pad_height, pad_width, pad_top, pad_bottom, pad_left, pad_right = self.determine_padding_size()
-                    temp2 = np.zeros(
-                        (self.num_kernels, int(temp.shape[1] + pad_height), int(temp.shape[2] + pad_width)))
-                    for channel in range(temp.shape[0]):
-                        temp2[channel] = np.pad(temp[channel],
-                                                [(int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
-                                                mode='constant')
                     self.prev_error[batch, ker] = \
-                    signal.convolve(temp2, np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
+                    signal.convolve(self.find_padded_input(upsampled_error)[batch], np.rot90(np.rot90(new_weights[ker])), mode='valid')[0]
 
             self.gradient_w = self.find_gradient_weights(upsampled_error)
             if (self._optimizer_b != None):
@@ -172,6 +139,22 @@ class Conv(Base.BaseLayer):
             self.gradient_w = self.find_gradient_weights(upsampled_error)
 
         return self.prev_error
+
+    def find_padded_input(self, input_tensor):
+        if (self.img_2d == True):
+            pad_height, pad_width, pad_top, pad_bottom, pad_left, pad_right = self.determine_padding_size()
+            array_temp = np.zeros((input_tensor.shape[0], input_tensor.shape[1],
+                                   input_tensor.shape[2] + pad_height, input_tensor.shape[3] + pad_width))
+            array_temp = np.pad(input_tensor,
+                                [(0, 0), (0, 0), (int(pad_top), int(pad_bottom)), (int(pad_left), int(pad_right))],
+                                mode='constant')
+            return array_temp
+        else:
+            pad_height, pad_top, pad_bottom = self.determine_padding_size()
+            array_temp = np.zeros(
+                (input_tensor.shape[0], input_tensor.shape[1], input_tensor.shape[2] + pad_height))
+            array_temp = np.pad(input_tensor, [(0, 0), (0, 0), (int(pad_top), int(pad_bottom))], mode='constant')
+            return array_temp
 
     def determine_padding_size(self):
         if (self.img_2d):
