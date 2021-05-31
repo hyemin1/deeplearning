@@ -253,26 +253,21 @@ class Conv(Base.BaseLayer):
             upsampled_error = np.zeros(
                 (error_tensor.shape[0], self.num_kernels, self.input_tensor.shape[2], self.input_tensor.shape[3]))
 
-            for batch in range(self.input_tensor.shape[0]):
-                for ker in range(self.num_kernels):
-                    for r in range(error_tensor.shape[2]):
-                        if (r * self.stride_shape[0] < upsampled_error.shape[2]):
-                            for c in range(error_tensor.shape[3]):
-                                if (c * self.stride_shape[1] < upsampled_error.shape[3]):
-                                    upsampled_error[batch, ker, r * self.stride_shape[0], c * self.stride_shape[1]] = error_tensor[batch, ker, r, c]
-                                else:
-                                    print("not found")
+            for r in range(error_tensor.shape[2]):
+                if (r * self.stride_shape[0] < upsampled_error.shape[2]):
+                    for c in range(error_tensor.shape[3]):
+                        if (c * self.stride_shape[1] < upsampled_error.shape[3]):
+                            upsampled_error[:, :, r * self.stride_shape[0], c * self.stride_shape[1]] = error_tensor[:, :, r, c]
+                        else:
+                            print("not found")
         else:
             upsampled_error = np.zeros(
                 (error_tensor.shape[0], self.num_kernels, self.input_tensor.shape[2]))
 
-            for batch in range(self.input_tensor.shape[0]):
-                for ker in range(self.num_kernels):
-                    for r in range(error_tensor.shape[2]):
-                        if (r * self.stride_shape[0] < upsampled_error.shape[2]):
-                            upsampled_error[batch, ker, r * self.stride_shape[0]] = \
-                                error_tensor[batch, ker, r]
-                        else:
-                            print("not found")
+            for r in range(error_tensor.shape[2]):
+                if (r * self.stride_shape[0] < upsampled_error.shape[2]):
+                    upsampled_error[:, :, r * self.stride_shape[0]] = error_tensor[:, :, r]
+                else:
+                    print("not found")
 
         return upsampled_error
