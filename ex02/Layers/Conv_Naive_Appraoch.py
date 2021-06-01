@@ -45,7 +45,7 @@ class Conv(Base.BaseLayer):
 
     @property
     def optimizer(self):
-        return self._optimizer
+        return self._optimizer_w
 
     @optimizer.setter
     def optimizer(self, opt):
@@ -96,8 +96,8 @@ class Conv(Base.BaseLayer):
         return self.output_tensor
 
     def backward(self, error_tensor):
-        self.prev_error = np.zeros(self.input_tensor.shape)
-        self.gradient_w = np.zeros(self.weights.shape)
+        #self.prev_error = np.zeros(self.input_tensor.shape)
+        #self.gradient_w = np.zeros(self.weights.shape)
 
         if (self.img_2d == True):
             """
@@ -122,7 +122,7 @@ class Conv(Base.BaseLayer):
                     temp[ker] = self.weights[ker, in_ch]
                 new_weights[in_ch] = temp
             # flip spatial space
-            # new_weights[:,:] = np.flip(new_weights[:,:], axis= 0)
+
             for in_ch in range(self.input_cha_num):
                 for ker in range(self.num_kernels):
                     new_weights[in_ch, ker] = np.flip(new_weights[in_ch, ker], axis=0)
@@ -238,30 +238,7 @@ class Conv(Base.BaseLayer):
 
     def find_gradient_weights(self, upsampled_error):
         if (self.img_2d):
-            pad_size = self.weights.shape[3] - 1
-            total = self.input_tensor.shape[3] + pad_size
-
-            pad_height = self.weights.shape[3] - 1
-            if (self.stride_shape[0] > self.stride_shape[1]):
-                pad_height = pad_size - self.stride_shape[0]
-            total_2 = self.input_tensor.shape[2] + pad_height
-            if (pad_size % 2 == 0):
-                pad_first = pad_size / 2
-                pad_second = pad_first
-            else:
-                pad_first = np.floor(pad_size / 2)
-                pad_second = pad_first + 1
-
-            if (pad_height % 2 == 0):
-                pad_top = pad_height / 2
-                pad_bottom = pad_top
-            else:
-                pad_top = np.floor(pad_height / 2)
-                pad_bottom = pad_top + 1
-            padded_input = np.zeros((self.input_tensor.shape[0], self.input_cha_num, total_2, total))
-            padded_input = np.pad(self.input_tensor, [(0,0), (0,0), (int(pad_top), int(pad_bottom)), (int(pad_first), int(pad_second))],
-                                  mode='constant')
-
+            padded_input=self.find_padded_input(self.input_tensor)
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                          np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1,
                                          np.abs(len(padded_input[0, 0, 0]) - len(upsampled_error[0, 0, 0])) + 1))
@@ -271,24 +248,12 @@ class Conv(Base.BaseLayer):
                     temp_gradient_w[ker, in_ch] += temp
 
         else:
-            pad_size = self.weights.shape[2] - 1
-            total = self.input_tensor.shape[2] + pad_size
-
-            if (pad_size % 2 == 0):
-                pad_top = pad_size / 2
-                pad_bottom = pad_top
-            else:
-                pad_top = np.floor(pad_size / 2)
-                pad_bottom = pad_top + 1
-
-            padded_input = np.zeros((self.input_tensor.shape[0], self.input_cha_num, total))
-            padded_input = np.pad(self.input_tensor,[(0,0), (0,0), (int(pad_top), int(pad_bottom))], mode='constant')
-
+            padded_input = self.find_padded_input(self.input_tensor)
             temp_gradient_w = np.zeros((self.num_kernels, self.input_cha_num,
                                         np.abs(len(padded_input[0, 0]) - len(upsampled_error[0, 0])) + 1))
             for ker in range(self.num_kernels):
                 for in_ch in range(self.input_cha_num):
-                    temp = signal.correlate(padded_input[:, in_ch], upsampled_error[:, ker], mode='valid')[0]
+                    temp = signal.correlate2d(padded_input[:, in_ch], upsampled_error[:, ker], mode='valid')[0]
                     temp_gradient_w[ker, in_ch] += temp
 
         return temp_gradient_w
