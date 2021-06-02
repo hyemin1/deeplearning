@@ -6,8 +6,8 @@ class Dropout(Base.BaseLayer):
         self.p=probability
     def forward(self,input_tensor):
         if(self.testing_phase==False):
-            self.dropped=input_tensor*(np.random.random(input_tensor.shape)>(1-self.p))
-            return (1/self.p)*self.dropped
+            self.dropped=(np.random.random(input_tensor.shape)>(1-self.p))
+            return (1/self.p)*self.dropped*input_tensor
         else:
             return input_tensor
 
