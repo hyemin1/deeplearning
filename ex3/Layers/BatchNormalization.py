@@ -1,5 +1,7 @@
 import numpy as np
+import Helpers
 from Layers import Base
+import copy
 
 class BatchNormalization(Base.BaseLayer):
     def __init__(self, channels):
@@ -10,46 +12,83 @@ class BatchNormalization(Base.BaseLayer):
         self.weights = np.ones(self.num_of_channels)
         self.bias = np.zeros(self.num_of_channels)
 
+        self._optimizer_b = None
+        self._optimizer_w = None
+
     def initialize(self, weights_initializer, bias_initializer):
         self.weights = weights_initializer.initialize(self.weights)
         self.bias = bias_initializer.initialize(self.bias)
 
+    @property
+    def gradient_weights(self):
+        return self.gradient_w
+
+    @property
+    def gradient_bias(self):
+        return self.gradient_b
+
+    @property
+    def optimizer(self):
+        return self._optimizer_w
+
+    @optimizer.setter
+    def optimizer(self, opt):
+        self._optimizer_b = copy.deepcopy(opt)
+        self._optimizer_w = copy.deepcopy(opt)
+
     def forward(self, input_tensor):
         self.input_tensor = input_tensor
         momentum = 0.8
-        moving_mean = np.zeros((1, self.num_of_channels, 1, 1))
-        moving_var = np.zeros((1, self.num_of_channels, 1, 1))
+
+        if (len(input_tensor.shape) == 2):
+            new_input = input_tensor
+        else:
+            new_input = self.reformat(input_tensor)
 
         if not self.testing_phase:
-            if (len(input_tensor.shape) == 2):
-                mean = np.mean(input_tensor, axis=0)
-                variance = np.var(input_tensor, axis=0)
+            self.mean = np.mean(new_input, axis=0)
+            self.variance = np.var(new_input, axis=0)
 
-                moving_mean = np.zeros((1, self.num_of_channels))
-                moving_var = np.zeros((1, self.num_of_channels))
-            else:
-                mean = np.mean(input_tensor, axis=(1, 2, 3), keepdims=True)
-                variance = np.var(input_tensor, axis=(1, 2, 3), keepdims=True)
+            self.input_normalized = (new_input - self.mean)/np.sqrt(self.variance + (np.finfo(float).eps))
+            output = (self.weights * self.input_normalized) + self.bias
 
-                self.weights = np.ones(input_tensor.shape)
-                self.bias = np.zeros(input_tensor.shape)
-
-            input_normalized = (input_tensor - mean) / np.sqrt(variance + (np.finfo(float).eps))
-            moving_mean = momentum * moving_mean + ((1.0 - momentum) * mean)
-            moving_var = momentum * moving_mean + ((1.0 - momentum) * mean)
-
-            output = (self.weights * input_normalized) + self.bias
-        else:
             if (len(input_tensor.shape) > 2):
-                self.weights = np.ones(input_tensor.shape)
-                self.bias = np.zeros(input_tensor.shape)
+                output = self.reformat(output)
 
-            input_normalized = (input_tensor - moving_mean) / np.sqrt(moving_var + (np.finfo(float).eps))
+            self.moving_mean = self.mean
+            self.moving_var = self.variance
+
+            self.moving_mean = (momentum * self.moving_mean) + ((1 - momentum) * self.mean)
+            self.moving_var = (momentum * self.moving_var) + ((1 - momentum) * self.variance)
+        else:
+            input_normalized = (new_input - self.moving_mean) / np.sqrt(self.moving_var + (np.finfo(float).eps))
             output = (self.weights * input_normalized) + self.bias
+
+            if (len(input_tensor.shape) > 2):
+                output = self.reformat(output)
+
         return output
 
     def backward(self, error_tensor):
-        pass
+        if (len(self.input_tensor.shape) == 2):
+            self.error_tensor = error_tensor
+            t_input = self.input_tensor
+        else:
+            self.error_tensor = self.reformat(error_tensor)
+            t_input = self.reformat(self.input_tensor)
+
+        self.gradient_w = np.sum(self.error_tensor * self.input_normalized, axis=0)
+        self.gradient_b = np.sum(self.error_tensor, axis=0)
+
+        if (self._optimizer_b != None):
+            self.bias = self._optimizer_b.calculate_update(self.bias, self.gradient_b)
+        if (self._optimizer_w != None):
+            self.weights = self._optimizer_w.calculate_update(self.weights, self.gradient_w)
+
+        output = Helpers.compute_bn_gradients(self.error_tensor, t_input, self.weights, self.mean, self.variance)
+        if (len(error_tensor.shape) > 2):
+            output = self.reformat(output)
+        return output
 
     def reformat(self, tensor):
         if (len(tensor.shape) > 2):
@@ -64,4 +103,3 @@ class BatchNormalization(Base.BaseLayer):
             output = np.reshape(output, (batch, input_channel, height, width))
 
         return output
-
