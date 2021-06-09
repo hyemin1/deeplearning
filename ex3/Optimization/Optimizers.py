@@ -3,16 +3,17 @@ import math
 class Optimizer:
     def __init__(self):
         self.regularizer=None
+
     def add_regularizer(self,regularizer):
         self.regularizer=regularizer
 
 class Sgd(Optimizer):
     def __init__(self,learning_rate):
         self.learning_rate=learning_rate
-
+        self.regularizer = None
 
     def calculate_update(self,weight_tensor,gradient_tensor):
-        if(self.regularizer!=None):
+        if(self.regularizer != None):
             self.updated_weight=weight_tensor-self.learning_rate*self.regularizer.calculate_gradient(weight_tensor)-self.learning_rate*gradient_tensor
         else:
             #update weights: W - (learning rate)*X^T*E
@@ -20,12 +21,13 @@ class Sgd(Optimizer):
         return self.updated_weight
 
 
-
 class SgdWithMomentum(Optimizer):
     def __init__(self,learning_rate,momentum_rate):
         self.learning_rate= learning_rate
         self.momentum_rate=momentum_rate
         self.velocity=0
+        self.regularizer = None
+
     def calculate_update(self,weight_tensor,gradient_tensor):
         self.velocity = self.momentum_rate * self.velocity - self.learning_rate * gradient_tensor
         if (self.regularizer != None):
@@ -33,7 +35,6 @@ class SgdWithMomentum(Optimizer):
         else:
             self.updated_weight = weight_tensor+self.velocity
         return self.updated_weight
-
 
 
 class Adam(Optimizer):
@@ -44,6 +45,8 @@ class Adam(Optimizer):
         self.velocity=0
         self.r=0
         self.t=0
+        self.regularizer = None
+
     def calculate_update(self,weight_tensor,gradient_tensor):
         self.t=self.t+1
         self.g = gradient_tensor
