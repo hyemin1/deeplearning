@@ -127,20 +127,17 @@ class RNN(Base.BaseLayer):
 
             #un_sig=np.dot(self.weights_hy,error_tensor[time])
             un_sig = np.dot(self.weights_hy,un_sig.T)
-            print("iteration : "+str(time))
-            print(un_sig.shape)
-            print(self.gradient_hidden.shape)
-            un_sig = np.array((np.asmatrix(un_sig) + np.asmatrix(self.gradient_hidden)))
+            #???
+            #un_sig=un_sig +self.gradient_hidden
+
 
             un_tan = self.tanh_values[time].backward(un_sig)
 
             self.gradient_w += np.dot(np.asmatrix(self.concatenated[time]).T,np.asmatrix(un_tan))
             un_tan_concatenatedx = np.matmul(np.asmatrix(un_tan),self.w.T)
 
-            self.gradient_hidden=un_tan_concatenatedx
-            prev_error=un_tan_concatenatedx[self.hidden_size:-1]
-
-            #self.gradient_w+=np.matmul(np.asmatrix(un_tan).T,np.asmatrix(self.concatenated[time].T))
+            prev_error=un_tan_concatenatedx[0:self.input_size]
+            self.gradient_hidden = un_tan_concatenatedx[self.input_size:-1]
 
 
 
