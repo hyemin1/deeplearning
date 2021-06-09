@@ -16,7 +16,6 @@ class Sgd(Optimizer):
         if(self.regularizer != None):
             self.updated_weight=weight_tensor-self.learning_rate*self.regularizer.calculate_gradient(weight_tensor)-self.learning_rate*gradient_tensor
         else:
-            #update weights: W - (learning rate)*X^T*E
             self.updated_weight = weight_tensor - (self.learning_rate)*(gradient_tensor)
         return self.updated_weight
 
