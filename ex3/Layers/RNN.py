@@ -1,5 +1,6 @@
-from Layers import Base,TanH,Sigmoid
+from Layers import Base,TanH,Sigmoid,FullyConnected
 import numpy as np
+import copy
 class RNN(Base.BaseLayer):
     def __init__(self,input_size,hidden_size,output_size):
         super().__init__()
@@ -9,42 +10,51 @@ class RNN(Base.BaseLayer):
         self.hidden_state = np.zeros(hidden_size)
         self.trainable=True
         self.memorize=False
-        self.w=np.random.uniform(0,1,(self.input_size+hidden_size+1, self.hidden_size))
-        self.weights_hy = np.random.uniform(0,1,(hidden_size,output_size))
-        self.bias = np.random.uniform(0,1,output_size)
+        # self.w=np.random.uniform(0,1,(self.input_size+hidden_size, self.hidden_size))
+        # self.weights_hy = np.random.uniform(0,1,(hidden_size,output_size))
+        self.fc_output=FullyConnected.FullyConnected(self.hidden_size,self.output_size)
+        self.fc_hidden = FullyConnected.FullyConnected(self.input_size+self.hidden_size,self.hidden_size)
+        #self.fc_hidden=FullyConnected()
+        #self.bias = np.random.uniform(0,1,output_size)
 
-        self.gradient_w=None
-        self.gradient_b=None
-        self.hidden_values=None
-        self.gradient_hidden=np.zeros(hidden_size)
+        self.hidden_opt=None
+        self.out_opt=None
 
     def initialize(self, weights_initializer, bias_initializer):
+        self.fc_hidden.initialize(weights_initializer,bias_initializer)
+        self.fc_output.initialize(weights_initializer,bias_initializer)
         # weights_initializer.fan_in = self.input_size
         # weights_initializer.fan_out = self.output_size
-        self.w[0:-1, :] = weights_initializer.initialize((self.weights.shape[0]-1,self.weights.shape[1]), self.input_size,
-                                                               self.output_size)
-        self.w[-1] = bias_initializer.initialize((1, self.weights.shape[1]), self.input_size, self.output_size)
+        # self.w[0:-1, :] = weights_initializer.initialize((self.weights.shape[0]-1,self.weights.shape[1]), self.input_size,
+        #                                                        self.output_size)
+        # self.w[-1] = bias_initializer.initialize((1, self.weights.shape[1]), self.input_size, self.output_size)
 
-    @property
-    def optimizer(self):
-        return self._optimizer
-
-    @optimizer.setter
-    def optimizer(self, opt):
-        self._optimizer = opt
 
     @property
     def weights(self):
-        return self.w
+
+        return self.fc_hidden.weights
     @weights.setter
-    def weights(self,w):
-        self.w = w
+    def weights(self,nw):
+        self.fc_hidden.weights=nw
+
     @property
     def gradient_weights(self):
-        return self.gradient_w
+        return self.fc_hidden.gradient_w
+    @gradient_weights.setter
+    def gradient_weights(self,w):
+        self.fc_hidden.gradient_w=w
     @property
-    def gradient_bias(self):
-        return self.gradient_b
+    def optimizer(self):
+        return self.hidden_opt
+    @optimizer.setter
+    def optimizer(self,opt):
+        self.hidden_opt = copy.deepcopy(opt)
+        self.out_opt = copy.deepcopy(opt)
+
+    @property
+    def calculate_regularization_loss(self):
+        pass
     def forward(self,input_tensor):
         output_tensor=np.zeros((input_tensor.shape[0],self.output_size))
         self.input_tensor = input_tensor
@@ -52,8 +62,8 @@ class RNN(Base.BaseLayer):
         self.tanh_values=np.empty((input_tensor.shape[0]),dtype=TanH.TanH)
         self.hidden_values=np.zeros((input_tensor.shape[0],self.hidden_size))
         self.concatenated =np.zeros((input_tensor.shape[0],self.input_size+self.hidden_size+1))
-
-        #self.input_tensor=np.zeros((input_tensor.shape[0],self.input_size+self.hidden_size+1))
+        self.input_hidden=np.zeros((input_tensor.shape[0],self.input_size+self.hidden_size+1))
+        self.input_out = np.zeros((input_tensor.shape[0], self.hidden_size+1))
         first=True
         for time in range(input_tensor.shape[0]):
             if (first==True):
@@ -61,114 +71,96 @@ class RNN(Base.BaseLayer):
                     self.hidden_state= np.zeros((self.hidden_size))
 
                 first=False
-
+            """
+            concatenate input tensor
+            """
             concatenated = np.concatenate([input_tensor[time], self.hidden_state])
-            concatenated = np.append(concatenated, 1)
-            self.concatenated[time]=concatenated
-                #self.input_tensor[time]=concatenated
-            concatenated=np.matmul(concatenated,self.weights)
+            #concatenated = np.append(concatenated,1)
+            #self.concatenated[time]=concatenated
+            """
+            apply hidden weight matrix
+            """
+            #self.input_hidden[time] = concatenated
+            concatenated=self.fc_hidden.forward(concatenated)
+            self.input_hidden[time]=self.fc_hidden.input_tensor
+            #concatenated=np.matmul(concatenated,self.weights)
+            """
+            store tanh,sigh for this iteration
+            """
             tan = TanH.TanH()
             sig = Sigmoid.Sigmoid()
-               # self.sigmoid_values[time]=sig
-                #np.append(self.sigmoid_values,sig)
-
-
-            self.hidden_state = tan.forward(concatenated)
+            """
+            apply tanh activation function
+            """
+            self.hidden_state =tan.forward(concatenated)
             self.tanh_values[time] = tan
-                #self.tanh_values[time]=tan
-                #np.append(self.tanh_values,tan)
             self.hidden_values[time]=self.hidden_state
-            output_tensor[time]=sig.forward(np.matmul(self.hidden_state,self.weights_hy)+self.bias)
-            self.sigmoid_values[time] = sig
-                #self.sigmoid_values[time]=sig
 
-
-
+            """
+            apply weight matrix for output
+            """
+            con_hidden=self.hidden_state
+            #con_hidden = np.append(self.hidden_state,1)
+            #self.input_out[time]=con_hidden
+            con_hidden=self.fc_output.forward(con_hidden)
+            self.input_out[time]=self.fc_output.input_tensor
+            """
+            apply sigmoid activation function & store
+            """
+            output_tensor[time]=sig.forward(con_hidden)
+            self.sigmoid_values[time]=sig
         return output_tensor
     def backward(self,error_tensor):
         prev_error= np.zeros((error_tensor.shape[0],self.input_size))
-        self.gradient_b=np.zeros((self.output_size))
-        self.gradient_w=np.zeros((self.w.shape))
-        self.gradient_why=np.zeros(self.weights_hy.shape)
-        #gradient_b_tmp = np.zeros((error_tensor.shape[0]))
-        """
-        1. gradient w.r.t. input tensor
-        2. gradient w.r.t. weights
-        3. gradient w.r.t bias
-        """
+        self.gradient_w_hidden=np.zeros((self.fc_hidden.weights.shape))
+        self.gradient_w_out = np.zeros((self.fc_output.weights.shape))
 
-        # for time in reversed(range(error_tensor.shape[0])):
-        #     un_sig = self.sigmoid_values[time].backward(error_tensor[time])
-        #     self.gradient_b+=un_sig
-        #
-        #     #self.gradient_why+=np.dot(un_sig.T,self.hidden_values[time].T)
-        #     print(np.dot(un_sig,self.hidden_values[time]))
-        #     #self.gradient_why+=np.matmul(self.input_tensor[time].T,error_tensor[time])
-        #     if(time==error_tensor.shape[0]-1):
-        #         self.gradient_hidden=np.matmul(self.weights_hy.T,un_sig)
-        #     else:
-        #         self.gradient_hidden=np.matmul(self.weights[:,self.input_size:-1].T,self.tanh_values[time].backward(self.gradient_hidden))+ np.matmul(self.weights_hy.T,un_sig)
-        #     self.gradient_w[time]+=np.matmul(self.tanh_values[time].backward(self.gradient_hidden),self.concatenated[time])
-        #     prev_error[time]=np.matmul(self.tanh_values[time].backward(self.gradient_hidden),self.weights)
-        #     print("this iteration: "+str(time))
-        #     print(un_sig)
-        # print(self.gradient_why.shape)
-        # print(self.hidden_values)
-        #print(self.hidden_values[0])
+        self.gradient_w_hidden=np.zeros((self.input_size+self.hidden_size+1,self.hidden_size))
         for time in reversed(range(error_tensor.shape[0])):
+            """
+            backpropagate sigmoid function
+            """
             un_sig = self.sigmoid_values[time].backward(error_tensor[time])
-            self.gradient_b+=un_sig
-            #un_sig:output size
-            #hidden state? hidden values?
-            self.gradient_why+=np.array((np.matmul(np.asmatrix(self.hidden_values[time]).T,np.asmatrix(un_sig))))
 
+            """
+            backpropagate the output fully connected weight matrix
+            """
+            self.fc_output.input_tensor=self.input_out[time]
+            un_out_weight=self.fc_output.backward(un_sig)
+            """
+            sum up the gradient w.r.t. output weights
+            """
+            self.gradient_w_out+=self.fc_output.gradient_weights
+            """
+            backpropagate copy operation
+            """
             if(time==error_tensor.shape[0]-1):
-                self.gradient_hidden=np.zeros(self.hidden_size)
-
-            #un_sig=np.dot(self.weights_hy,error_tensor[time])
-            un_sig = np.dot(self.weights_hy,un_sig.T)
-            #???
-            #un_sig=un_sig +self.gradient_hidden
-
-
-            un_tan = self.tanh_values[time].backward(un_sig)
-
-            self.gradient_w += np.dot(np.asmatrix(self.concatenated[time]).T,np.asmatrix(un_tan))
-            un_tan_concatenatedx = np.matmul(np.asmatrix(un_tan),self.w.T)
-
-            prev_error=un_tan_concatenatedx[0:self.input_size]
-            self.gradient_hidden = un_tan_concatenatedx[self.input_size:-1]
-
-
-
-        # self.gradient_h=0
-        # self.gradient_w=np.zeros((error_tensor.shape[0]))
-        # #self.gradient_w=0
-        # self.gradient_w= np.zeros((error_tensor.shape[0]))
-        # self.gradient_b=np.zeros((prev_error.shape))
-        # self.gradient_hy=np.zeros((error_tensor.shape[0],13,self.hidden_state.shape[0]))
-        # #self.gradient_w=np.matmul(self.input_tensor.T,error_tensor)
-        # print(self.hidden_size)
-        # for time in reversed(range(error_tensor.shape[0])):
-        #     #self.gradient_b[time] += np.sum(error_tensor[time])
-        #     un_sig = self.sig.backward(self.sigmoid_values[time])
-        #     if(time==error_tensor.shape[0]-1):
-        #         self.gradient_h=np.zeros((self.hidden_size,1))
-        #     tmprev_error=un_sig+self.gradient_h
-        #     prev_error[time]=np.matmul(un_sig,error_tensor[time])
-        #     print(self.hidden_state.shape)
-        #     self.gradient_hy[time]=np.dot(prev_error[time],self.hidden_values[time].T)
-        #     self.gradient_b[time]=prev_error[time]
-        #
-        #     #self.gradient_w[time]=np.dot(self.input_tensor[time].T,error_tensor[time])
-        #     # print(self.sigmoid_values[time].shape)
-        #     # print(self.tanh_values[time].shape)
-        #     #un_tanh = self.tan.backward(tmprev_error*self.tanh_values[time])
-        #     #print(un_tanh.shape)
-        #     # print(tmprev_error.shape)
-        #     # print("this iteration is: "+str(time))
-        #    # self.gradient_w[time]+=np.sum(np.matmul(self.input_tensor.T,error_tensor))
-        #     # print(un_tanh)`
-
-
+                self.gradient_hidden=np.zeros((self.hidden_size))
+            un_copy= un_out_weight+self.gradient_hidden
+            """
+            backpropagate tanh function
+            """
+            un_tanh =self.tanh_values[time].backward(un_copy)
+            """
+            backpropagate the hidden fully connected weight matrix
+            """
+            self.fc_hidden.input_tensor=(self.input_hidden[time])
+            un_hidden_weight=self.fc_hidden.backward(un_tanh)
+            """
+            split the un_hidden_weight
+            get the gradient w.r.t. input &hidden state
+            """
+            prev_error[time]=un_hidden_weight[0:self.input_size]
+            self.gradient_hidden=un_hidden_weight[self.input_size:]
+            """
+            sum up gradient w.r.t. hidden weight matrix
+            """
+            self.gradient_w_hidden+=self.fc_hidden.gradient_weights
+        """
+        update fully connected hidden & output weight matrices
+        """
+        if(self.hidden_opt!=None):
+            self.fc_hidden.weights=self.hidden_opt.calculate_update(self.fc_hidden.weights,self.gradient_w_hidden)
+        if (self.out_opt != None):
+            self.fc_output.weights = self.out_opt.calculate_update(self.fc_output.weights, self.gradient_w_out)
         return prev_error
