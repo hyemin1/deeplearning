@@ -14,7 +14,7 @@ class FullyConnected(Base.BaseLayer):
         # initialize weight matrix
         self.weights = np.random.uniform(0, 1, ((self.input_size+1 ) * self.output_size))
         self.weights = np.reshape(self.weights, (self.input_size+1, self.output_size))
-
+        self.par_weights = self.weights[0:-1,:]
     def initialize(self, weights_initializer, bias_initializer):
         # weights_initializer.fan_in = self.input_size
         # weights_initializer.fan_out = self.output_size
@@ -32,6 +32,9 @@ class FullyConnected(Base.BaseLayer):
     @property
     def gradient_weights(self):
         return self.gradient_w
+    @gradient_weights.setter
+    def gradient_weights(self,w):
+        self.gradient_w=w
 
     @property
     def X(self):
@@ -39,12 +42,7 @@ class FullyConnected(Base.BaseLayer):
     @X.setter
     def X(self,input):
         self.input_tensor=input
-    @property
-    def w(self):
-        return self.weights
-    @w.setter
-    def w(self,w):
-        self.weights=w
+
     def forward(self,input_tensor):
         self.batch_size=len(input_tensor)
         #self.input_size=len(input_tensor[0])
