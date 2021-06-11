@@ -10,40 +10,28 @@ class RNN(Base.BaseLayer):
         self.hidden_state = np.zeros(hidden_size)
         self.trainable=True
         self.memorize=False
-        # self.w=np.random.uniform(0,1,(self.input_size+hidden_size, self.hidden_size))
-        # self.weights_hy = np.random.uniform(0,1,(hidden_size,output_size))
         self.fc_output=FullyConnected.FullyConnected(self.hidden_size,self.output_size)
         self.fc_hidden = FullyConnected.FullyConnected(self.input_size+self.hidden_size,self.hidden_size)
-        #self.fc_hidden=FullyConnected()
-        #self.bias = np.random.uniform(0,1,output_size)
-
         self.hidden_opt=None
         self.out_opt=None
 
     def initialize(self, weights_initializer, bias_initializer):
         self.fc_hidden.initialize(weights_initializer,bias_initializer)
         self.fc_output.initialize(weights_initializer,bias_initializer)
-        # weights_initializer.fan_in = self.input_size
-        # weights_initializer.fan_out = self.output_size
-        # self.w[0:-1, :] = weights_initializer.initialize((self.weights.shape[0]-1,self.weights.shape[1]), self.input_size,
-        #                                                        self.output_size)
-        # self.w[-1] = bias_initializer.initialize((1, self.weights.shape[1]), self.input_size, self.output_size)
-
 
     @property
     def weights(self):
-
         return self.fc_hidden.weights
     @weights.setter
     def weights(self,nw):
         self.fc_hidden.weights=nw
-
     @property
     def gradient_weights(self):
-        return self.fc_hidden.gradient_w
+        return self.gradient_w_hidden
     @gradient_weights.setter
     def gradient_weights(self,w):
-        self.fc_hidden.gradient_w=w
+        self.fc_hidden.gradient_weights(w)
+
     @property
     def optimizer(self):
         return self.hidden_opt
@@ -52,10 +40,11 @@ class RNN(Base.BaseLayer):
         self.hidden_opt = copy.deepcopy(opt)
         self.out_opt = copy.deepcopy(opt)
 
-    @property
+
     def calculate_regularization_loss(self):
         pass
     def forward(self,input_tensor):
+
         output_tensor=np.zeros((input_tensor.shape[0],self.output_size))
         self.input_tensor = input_tensor
         self.sigmoid_values=np.empty((input_tensor.shape[0]),dtype=Sigmoid.Sigmoid)
@@ -75,15 +64,11 @@ class RNN(Base.BaseLayer):
             concatenate input tensor
             """
             concatenated = np.concatenate([input_tensor[time], self.hidden_state])
-            #concatenated = np.append(concatenated,1)
-            #self.concatenated[time]=concatenated
             """
             apply hidden weight matrix
             """
-            #self.input_hidden[time] = concatenated
             concatenated=self.fc_hidden.forward(concatenated)
             self.input_hidden[time]=self.fc_hidden.input_tensor
-            #concatenated=np.matmul(concatenated,self.weights)
             """
             store tanh,sigh for this iteration
             """
@@ -100,8 +85,6 @@ class RNN(Base.BaseLayer):
             apply weight matrix for output
             """
             con_hidden=self.hidden_state
-            #con_hidden = np.append(self.hidden_state,1)
-            #self.input_out[time]=con_hidden
             con_hidden=self.fc_output.forward(con_hidden)
             self.input_out[time]=self.fc_output.input_tensor
             """
@@ -112,10 +95,10 @@ class RNN(Base.BaseLayer):
         return output_tensor
     def backward(self,error_tensor):
         prev_error= np.zeros((error_tensor.shape[0],self.input_size))
-        self.gradient_w_hidden=np.zeros((self.fc_hidden.weights.shape))
         self.gradient_w_out = np.zeros((self.fc_output.weights.shape))
 
-        self.gradient_w_hidden=np.zeros((self.input_size+self.hidden_size+1,self.hidden_size))
+        self.gradient_w_hidden = np.zeros((self.input_size + self.hidden_size + 1, self.hidden_size))
+
         for time in reversed(range(error_tensor.shape[0])):
             """
             backpropagate sigmoid function
@@ -163,4 +146,5 @@ class RNN(Base.BaseLayer):
             self.fc_hidden.weights=self.hidden_opt.calculate_update(self.fc_hidden.weights,self.gradient_w_hidden)
         if (self.out_opt != None):
             self.fc_output.weights = self.out_opt.calculate_update(self.fc_output.weights, self.gradient_w_out)
+
         return prev_error
