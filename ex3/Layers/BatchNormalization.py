@@ -16,8 +16,8 @@ class BatchNormalization(Base.BaseLayer):
         self._optimizer_w = None
 
     def initialize(self, weights_initializer, bias_initializer):
-        self.weights = weights_initializer.initialize(self.weights)
-        self.bias = bias_initializer.initialize(self.bias)
+        self.weights=np.ones((self.weights.shape))
+        self.bias=np.zeros((self.bias.shape))
 
     @property
     def gradient_weights(self):
