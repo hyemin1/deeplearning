@@ -8,6 +8,7 @@ class BatchNormalization(Base.BaseLayer):
         self.num_of_channels = channels
         self.trainable = True
         self.testing_phase = False
+        self.iteration_count = 0
 
         self.weights = np.ones(self.num_of_channels)
         self.bias = np.zeros(self.num_of_channels)
@@ -55,8 +56,9 @@ class BatchNormalization(Base.BaseLayer):
             if (len(input_tensor.shape) > 2):
                 output = self.reformat(output)
 
-            self.moving_mean = self.mean
-            self.moving_var = self.variance
+            if (self.iteration_count == 0):
+                self.moving_mean = self.mean
+                self.moving_var = self.variance
 
             self.moving_mean = (momentum * self.moving_mean) + ((1 - momentum) * self.mean)
             self.moving_var = (momentum * self.moving_var) + ((1 - momentum) * self.variance)
@@ -64,9 +66,10 @@ class BatchNormalization(Base.BaseLayer):
             input_normalized = (new_input - self.moving_mean) / np.sqrt(self.moving_var + (np.finfo(float).eps))
             output = (self.weights * input_normalized) + self.bias
 
-            if (len(input_tensor.shape) > 2):
+            if (len(input_tensor.shape) > 2): 
                 output = self.reformat(output)
 
+        self.iteration_count += 1
         return output
 
     def backward(self, error_tensor):
@@ -103,3 +106,4 @@ class BatchNormalization(Base.BaseLayer):
             output = np.reshape(output, (batch, input_channel, height, width))
 
         return output
+
