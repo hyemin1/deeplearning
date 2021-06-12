@@ -47,26 +47,32 @@ class FullyConnected(Base.BaseLayer):
         self.batch_size=len(input_tensor)
         #self.input_size=len(input_tensor[0])
         self.input_tensor=input_tensor
-        if(len(self.input_tensor)==2):
+        if(len(self.input_tensor)>=2):
             #re-define input_tensor: add a col
             self.input_tensor = np.ones((self.batch_size,self.input_size+1))
             self.input_tensor[:,:-1]=input_tensor
+            # compute output : Y = X*W
+            self.output_tensor = np.matmul(self.input_tensor, self.weights)
         else:
             self.input_tensor=np.append(input_tensor,1)
            # self.input_tensor=input_tensor
 
-        #compute output : Y = X*W
-        self.output_tensor= np.array(np.matmul(np.asmatrix(self.input_tensor),self.weights))
+            #compute output : Y = X*W
+            self.output_tensor= np.array(np.matmul(np.asmatrix(self.input_tensor),self.weights))
+            self.output_tensor=self.output_tensor[0]
         #print(self.output_tensor[0])
 
-        return self.output_tensor[0]
+        return self.output_tensor
 
     def backward(self,error_tensor):
         #weights in this current layer
         self.curr_weight=self.weights
 
         #compute gradient w.r.t weight
-        self.gradient_w = np.matmul(np.asmatrix(self.input_tensor).T,np.asmatrix(error_tensor))
+        if(len(self.input_tensor)>=2):
+            self.gradient_w = np.matmul(self.input_tensor.T, error_tensor)
+        else:
+            self.gradient_w = np.matmul(np.asmatrix(self.input_tensor).T,np.asmatrix(error_tensor))
 
         #if the optimizer is set, update weights
         if (self._optimizer!=None):
