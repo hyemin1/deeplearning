@@ -14,6 +14,7 @@ class RNN(Base.BaseLayer):
         self.fc_hidden = FullyConnected.FullyConnected(self.input_size+self.hidden_size,self.hidden_size)
         self.hidden_opt=None
         self.out_opt=None
+        self.n=True
 
     def initialize(self, weights_initializer, bias_initializer):
         self.fc_hidden.initialize(weights_initializer,bias_initializer)
@@ -42,17 +43,21 @@ class RNN(Base.BaseLayer):
 
 
     def calculate_regularization_loss(self):
-        pass
+        return self.hidden_opt.regularizer.norm(self.fc_hidden.weights)
     def forward(self,input_tensor):
 
         output_tensor=np.zeros((input_tensor.shape[0],self.output_size))
+        #output_tensor=np.zeros((input_tensor.shape[0]))
         self.input_tensor = input_tensor
         self.sigmoid_values=np.empty((input_tensor.shape[0]),dtype=Sigmoid.Sigmoid)
         self.tanh_values=np.empty((input_tensor.shape[0]),dtype=TanH.TanH)
         self.hidden_values=np.zeros((input_tensor.shape[0],self.hidden_size))
+        #self.hidden_values=np.zeros((input_tensor.shape[0]))
         self.concatenated =np.zeros((input_tensor.shape[0],self.input_size+self.hidden_size+1))
         self.input_hidden=np.zeros((input_tensor.shape[0],self.input_size+self.hidden_size+1))
+        #self.input_hidden = np.zeros((input_tensor.shape[0]))
         self.input_out = np.zeros((input_tensor.shape[0], self.hidden_size+1))
+        #self.input_out = np.zeros((input_tensor.shape[0]))
         first=True
         for time in range(input_tensor.shape[0]):
             if (first==True):
@@ -63,11 +68,16 @@ class RNN(Base.BaseLayer):
             """
             concatenate input tensor
             """
+
+
             concatenated = np.concatenate([input_tensor[time], self.hidden_state])
+
             """
             apply hidden weight matrix
             """
-            concatenated=self.fc_hidden.forward(concatenated)
+            concatenated=self.fc_hidden.forward(np.asmatrix(concatenated))
+
+            #np.append(self.input_hidden[time],self.fc_hidden.input_tensor)
             self.input_hidden[time]=self.fc_hidden.input_tensor
             """
             store tanh,sigh for this iteration
@@ -80,18 +90,24 @@ class RNN(Base.BaseLayer):
             self.hidden_state =tan.forward(concatenated)
             self.tanh_values[time] = tan
             self.hidden_values[time]=self.hidden_state
+            #np.append(self.hidden_values[time],self.hidden_state)
 
             """
             apply weight matrix for output
             """
             con_hidden=self.hidden_state
-            con_hidden=self.fc_output.forward(con_hidden)
+            con_hidden=self.fc_output.forward(np.asmatrix(con_hidden))
             self.input_out[time]=self.fc_output.input_tensor
+           # np.append(self.input_out[time],self.fc_output.input_tensor)
             """
             apply sigmoid activation function & store
             """
             output_tensor[time]=sig.forward(con_hidden)
+            #np.append(output_tensor[time],sig.forward(con_hidden))
+
             self.sigmoid_values[time]=sig
+        self.out=output_tensor
+        #print(self.input_out)
         return output_tensor
     def backward(self,error_tensor):
         prev_error= np.zeros((error_tensor.shape[0],self.input_size))
