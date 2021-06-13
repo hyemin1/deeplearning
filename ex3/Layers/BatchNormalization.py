@@ -1,5 +1,5 @@
 import numpy as np
-import Helpers
+from Layers import Helpers
 from Layers import Base
 import copy
 
@@ -9,7 +9,7 @@ class BatchNormalization(Base.BaseLayer):
         self.trainable = True
         self.testing_phase = False
         self.iteration_count = 0
-
+        self.n=False
         self.weights = np.ones(self.num_of_channels)
         self.bias = np.zeros(self.num_of_channels)
 
@@ -19,6 +19,18 @@ class BatchNormalization(Base.BaseLayer):
     def initialize(self, weights_initializer, bias_initializer):
         self.weights=np.ones((self.weights.shape))
         self.bias=np.zeros((self.bias.shape))
+        # if (self.img_2d == True):
+        #     self.fan_in = self.input_cha_num * self.m * self.n
+        #     self.fan_out = self.num_kernels * self.m * self.n
+        #
+        #     self.weights = weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
+        #     self.bias = bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
+        # else:
+        #     self.fan_in = self.input_cha_num * self.m
+        #     self.fan_out = self.num_kernels * self.m
+        #
+        #     self.weights = weights_initializer.initialize(self.weights.shape, self.fan_in, self.fan_out)
+        #     self.bias = bias_initializer.initialize(self.bias.shape, self.fan_in, self.fan_out)
 
     @property
     def gradient_weights(self):
@@ -66,7 +78,7 @@ class BatchNormalization(Base.BaseLayer):
             input_normalized = (new_input - self.moving_mean) / np.sqrt(self.moving_var + (np.finfo(float).eps))
             output = (self.weights * input_normalized) + self.bias
 
-            if (len(input_tensor.shape) > 2): 
+            if (len(input_tensor.shape) > 2):
                 output = self.reformat(output)
 
         self.iteration_count += 1
@@ -106,4 +118,3 @@ class BatchNormalization(Base.BaseLayer):
             output = np.reshape(output, (batch, input_channel, height, width))
 
         return output
-
