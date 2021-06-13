@@ -11,6 +11,8 @@ class NeuralNetwork():
         self.bias_initializer = bias_initializer
         self.weights_initializer=weights_initializer
 
+
+
     @property
     def phase(self):
         pass
@@ -31,8 +33,15 @@ class NeuralNetwork():
     def forward(self):
         self.input_tensor, self.label_tensor = self.data_layer.next()
         out = self.input_tensor
+        self.lay_loss=0
         for lay in self.layers:
             out = lay.forward(out)
+            if(lay.trainable==True and lay.optimizer.regularizer!=None and lay.n==True):
+
+                self.lay_loss+=lay.calculate_regularization_loss()
+                #print(self.lay_loss)
+                #self.a+=lay.calculate_regularization_loss()
+
         out = self.loss_layer.forward(out, self.label_tensor)
 
         return out
@@ -44,6 +53,7 @@ class NeuralNetwork():
     def append_layer(self,layer):
         if layer.trainable==True:
             layer.optimizer = copy.deepcopy(self.optimizer)
+
             #layer.weights = initialized_weights
             layer.initialize(self.weights_initializer,self.bias_initializer)
             #layer.initialize()
@@ -52,9 +62,11 @@ class NeuralNetwork():
 
     def train(self,iterations):
         self.phase=False
+        self.lay_loss = 0
         for i in range(iterations):
             out=self.forward()
-            self.loss.append(out)
+            self.loss.append(out+self.lay_loss)
+            print(out+self.lay_loss)
             #self.total=0
             # for lay in self.layers:
             #
@@ -69,7 +81,11 @@ class NeuralNetwork():
             #self.loss=np.add(self.loss,self.total)
             #np.add(self.loss,l)
             #self.loss=np.add(self.loss, self.norm(0))
+            #self.loss[-1] = np.add(self.loss[-1], 0)
+            #np.append(self.loss, self.lay_loss)
             self.backward()
+
+
 
 
     def test(self,input_tensor):
