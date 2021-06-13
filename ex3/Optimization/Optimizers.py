@@ -9,8 +9,9 @@ class Optimizer:
 
 class Sgd(Optimizer):
     def __init__(self,learning_rate):
+        super().__init__()
         self.learning_rate=learning_rate
-        self.regularizer = None
+        # self.regularizer = None
 
     def calculate_update(self,weight_tensor,gradient_tensor):
         if(self.regularizer != None):
@@ -20,12 +21,14 @@ class Sgd(Optimizer):
         return self.updated_weight
 
 
+
 class SgdWithMomentum(Optimizer):
     def __init__(self,learning_rate,momentum_rate):
+        super().__init__()
         self.learning_rate= learning_rate
         self.momentum_rate=momentum_rate
         self.velocity=0
-        self.regularizer = None
+        # self.regularizer = None
 
     def calculate_update(self,weight_tensor,gradient_tensor):
         self.velocity = self.momentum_rate * self.velocity - self.learning_rate * gradient_tensor
@@ -38,13 +41,14 @@ class SgdWithMomentum(Optimizer):
 
 class Adam(Optimizer):
     def __init__(self,learning_rate,mu,rho):
+        super().__init__()
         self.learning_rate = learning_rate
         self.mu=mu
         self.rho=rho
         self.velocity=0
         self.r=0
         self.t=0
-        self.regularizer = None
+        # self.regularizer = None
 
     def calculate_update(self,weight_tensor,gradient_tensor):
         self.t=self.t+1

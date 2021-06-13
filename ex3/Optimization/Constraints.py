@@ -5,6 +5,7 @@ class L2_Regularizer:
     def calculate_gradient(self,weights):
         return self.alpha*weights
     def norm(self,weights):
+        #print(weights.shape)
         return self.alpha*np.square(np.linalg.norm(weights,'fro'))
 
 class L1_Regularizer:
