@@ -12,4 +12,5 @@ class Dropout(Base.BaseLayer):
             return input_tensor
 
     def backward(self,error_tensor):
+        #if(self.testing_phase==True):
         return self.dropped*error_tensor*(1/self.p)
