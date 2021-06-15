@@ -11,8 +11,6 @@ class NeuralNetwork():
         self.bias_initializer = bias_initializer
         self.weights_initializer=weights_initializer
 
-
-
     @property
     def phase(self):
         pass
@@ -20,27 +18,15 @@ class NeuralNetwork():
     def phase(self,p):
         for lay in self.layers:
             lay.testing_phase=p
-    # def norm(self,weights):
-    #     total=0
-    #     # for lay in self.layers:
-    #     #     if (lay.trainable==True):
-    #     #             if(lay.optimizer.regularizer!=None and lay.n==True):
-    #     #
-    #     #                 total+=lay.calculate_regularization_loss()
-    #     #             #print(lay.calculate_regularization_loss())
-    #
-    #     return total
+
     def forward(self):
         self.input_tensor, self.label_tensor = self.data_layer.next()
         out = self.input_tensor
         self.lay_loss=0
         for lay in self.layers:
             out = lay.forward(out)
-            if(lay.trainable==True and lay.optimizer.regularizer!=None and lay.n==True):
-
+            if(lay.trainable==True and lay.optimizer.regularizer!=None and lay.reg==True):
                 self.lay_loss+=lay.calculate_regularization_loss()
-                #print(self.lay_loss)
-                #self.a+=lay.calculate_regularization_loss()
 
         out = self.loss_layer.forward(out, self.label_tensor)
 
@@ -66,23 +52,6 @@ class NeuralNetwork():
         for i in range(iterations):
             out=self.forward()
             self.loss.append(out+self.lay_loss)
-            print(out+self.lay_loss)
-            #self.total=0
-            # for lay in self.layers:
-            #
-            #     if(lay.trainable == True):
-            #         if (lay.optimizer.regularizer != None and lay.n == True):
-            #             pass
-                        #self.total+=lay.calculate_regularization_loss()
-                        #print(lay.calculate_regularization_loss())
-
-
-            #self.loss[-1]=self.loss[-1]+total
-            #self.loss=np.add(self.loss,self.total)
-            #np.add(self.loss,l)
-            #self.loss=np.add(self.loss, self.norm(0))
-            #self.loss[-1] = np.add(self.loss[-1], 0)
-            #np.append(self.loss, self.lay_loss)
             self.backward()
 
 
