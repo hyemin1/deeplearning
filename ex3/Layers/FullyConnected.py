@@ -17,8 +17,6 @@ class FullyConnected(Base.BaseLayer):
         self.weights = np.reshape(self.weights, (self.input_size+1, self.output_size))
         self.par_weights = self.weights[0:-1,:]
     def initialize(self, weights_initializer, bias_initializer):
-        # weights_initializer.fan_in = self.input_size
-        # weights_initializer.fan_out = self.output_size
         self.weights[0:-1,:]=weights_initializer.initialize((self.input_size,self.output_size),self.input_size,self.output_size)
         self.weights[-1]=bias_initializer.initialize((1,self.output_size),self.input_size,self.output_size)
 
@@ -49,7 +47,6 @@ class FullyConnected(Base.BaseLayer):
         return self._optimizer.regularizer.norm(self.weights)
     def forward(self,input_tensor):
         self.batch_size=len(input_tensor)
-        #self.input_size=len(input_tensor[0])
         self.input_tensor=input_tensor
 
         if(len(self.input_tensor)>=2 ):
@@ -65,8 +62,7 @@ class FullyConnected(Base.BaseLayer):
             #compute output : Y = X*W
             self.output_tensor= np.array(np.matmul(np.asmatrix(self.input_tensor),self.weights))
             self.output_tensor=self.output_tensor[0]
-        #print(self.output_tensor[0])
-        #print(self.input_tensor.shape)
+
         return self.output_tensor
 
     def backward(self,error_tensor):
