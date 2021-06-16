@@ -9,7 +9,7 @@ class FullyConnected(Base.BaseLayer):
         self.output_size=output_size
         self.input_tensor=np.empty((1,1))
         self.batch_size=0
-        self.n=True
+        self.reg=True
         #optimizer
         self._optimizer=None
         # initialize weight matrix
