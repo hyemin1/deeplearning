@@ -30,8 +30,6 @@ class ResNet(torch.nn.Module):
         super().__init__()
         self.lay_1=torch.nn.Sequential(torch.nn.Conv2d(3,64,7,2),torch.nn.BatchNorm2d(),torch.torch.nn.ReLU(),torch.nn.MaxPool2d(3,2))
         self.lay_2=torch.nn.Sequential(ResBlock(64,64,1),ResBlock(64,128,2),ResBlock(128,256,2),ResBlock(256,512,2))
-        self.avg=torch.nn.AvgPool2d()
-        self.flat= torch.nn.flatten()
         self.lay_3=torch.nn.Sequential(torch.nn.AvgPool2d(),torch.nn.flatten(),torch.nn.Linear(512,2),torch.nn.Sigmoid())
     def forward(self,input_tensor):
         output=self.lay_1(input_tensor)
