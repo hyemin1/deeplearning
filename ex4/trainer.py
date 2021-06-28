@@ -91,15 +91,19 @@ class Trainer:
         # iterate through the training set
         epoch_loss=0
         total=0
+        i=0
         for data in self._train_dl:
             # transfer the batch to "cuda()" -> the gpu if a gpu is given
             """
             add cuda to use GPU
             """
             # perform a training step
-            img,label=data.__getitem__
+            img_label=data.__getitem__(i)
+            img=img_label[0]
+            label=img_label[1]
             epoch_loss+=self.train_step(img,label)
             total+=label.size(0)
+            i+=1
         # calculate the average loss for the epoch and return it
         epoch_loss/=total
         return epoch_loss
@@ -166,7 +170,6 @@ class Trainer:
         return self.train_loss,self.val_loss
         #TODO
                     
-    
         
         
         
