@@ -6,7 +6,7 @@ from skimage.io import imread
 from skimage.color import gray2rgb
 import numpy as np
 import torchvision as tv
-
+from PIL import Image
 import skimage
 train_mean = [0.59685254, 0.59685254, 0.59685254]
 train_std = [0.16043035, 0.16043035, 0.16043035]
@@ -17,39 +17,56 @@ class ChallengeDataset(Dataset):
         super().__init__()
         #img name,cracks, inactive infos
         self.data=data
+
         #train or val
         self.mode=mode
         #different tranformations for training & validation
         if(self.mode=="val"):
             self._transform = torchvision.transforms.Compose(
-            [torchvision.transforms.ToPILImage(), torchvision.transforms.ToTensor(),
+            [torchvision.transforms.ToPILImage(),torchvision.transforms.ToTensor(),
              torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
         else:
             #added random transformation for dta augmentation
             self._transform = torchvision.transforms.Compose(
-                [torchvision.transforms.RandomRotation,torchvision.transforms.RandomHorizontalFlip,torchvision.transforms.ToPILImage(), torchvision.transforms.ToTensor(),
-                 torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
+                [torchvision.transforms.ToPILImage(),
+                 torchvision.transforms.ToTensor(),torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
+
 
 
     def __len__(self):
         #number of files
         return len(self.data)
     def __getitem__(self, index):
+
         #name of image file
-        #on my laptop, it works without specifying path
         rt= self.data.iloc[index,0]
         img=imread(rt)
-        len1=img.shape[0]
-        len2=img.shape[1]
         #RGB coloring
-        img=skimage.color.gray2rgb(img)
         #apply transformation
+        img = skimage.color.gray2rgb(img)
         img = self._transform(img)
-        img=img.reshape(3,len1,len2)
 
         #get the label of the current image
         label=np.array(self.data.iloc[index,1:],dtype='float')
 
         #return image and labels
-        item=(torch.tensor(img),torch.tensor(label))
+        item=(torch.tensor(img),torch.tensor(label,dtype=torch.long))
+        # img_arr=[]
+        # label_arr=[]
+        # for it in range(0,len(self.data)):
+        #     #name of image file
+        #     rt= self.data[it].iloc[index,0]
+        #     img=imread(rt)
+        #     #RGB coloring
+        #     #apply transformation
+        #     img = skimage.color.gray2rgb(img)
+        #     img = self._transform(img)
+        #     img_arr.append(img)
+        #
+        #     #get the label of the current image
+        #     label=np.array(self.data[it].iloc[index,1:],dtype='float')
+        #     label_arr.append(label)
+        # item = (torch.tensor(img_arr), torch.tensor(label_arr))
+        # print(len(item))
         return item
+

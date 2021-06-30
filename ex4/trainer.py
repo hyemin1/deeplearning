@@ -58,6 +58,10 @@ class Trainer:
         # -propagate through the network
         out = self._model(x)
         # -calculate the loss
+        # print(y.shape)
+        # print(out.shape)
+        y=torch.argmax(y,axis=1)
+        # print(y.shape)
         loss=self._crit(out,y)
         # -compute gradient by backward propagation
         loss.backward()
@@ -75,11 +79,12 @@ class Trainer:
         check
         """
         # predict
-        # self._model.eval()
         # propagate through the network and calculate the loss and predictions
         # self._crit.zero_grad()
         out = self._model(x)
         _, predict = torch.max(out, 1)
+
+        y = torch.argmax(y, axis=1)
         loss = self._crit(out, y)
         # return the loss and the predictions
         return loss,predict
@@ -92,18 +97,21 @@ class Trainer:
         epoch_loss=0
         total=0
         i=0
-        for data in self._train_dl:
+        cnt=0
+
+        for i,(img,label) in enumerate(self._train_dl):
             # transfer the batch to "cuda()" -> the gpu if a gpu is given
             """
             add cuda to use GPU
             """
             # perform a training step
-            img_label=data.__getitem__(i)
-            img=img_label[0]
-            label=img_label[1]
+
+            img=img.cuda()
+            label=label.cuda()
+
             epoch_loss+=self.train_step(img,label)
             total+=label.size(0)
-            i+=1
+            # i+=1
         # calculate the average loss for the epoch and return it
         epoch_loss/=total
         return epoch_loss
@@ -117,29 +125,37 @@ class Trainer:
         right=0
         total=0
         total_loss=0
-        with torch.no_grad:
+        cnt=0
+        i=0
+        choice=torch.tensor(2)
+        with torch.no_grad():
             # iterate through the validation set
-            for data in self._val_test_dl:
+            for i,(img,label) in enumerate(self._train_dl):
                 # transfer the batch to the gpu if given
                 """
                 add cuda to use GPU
                 """
-                img,label = data.__getitem__
+
                 # perform a validation step
+                img=img.cuda()
+                label=label.cuda()
+                cnt+=1
                 val_loss,out=self.val_test_step(img,label)
                 # save the predictions and the labels for each batch
                 total+=label.size(0)
-                right+=(label==out).squeeze()
+                # right+=(label==out).sum().item()
+                # choice+=out
                 total_loss+=val_loss
 
                 """
                 should add something
                 """
         # calculate the average loss and average metrics of your choice. You might want to calculate these metrics in designated functions
-        right/=total
+        # right/=total
+        # choice/=total
         total_loss/=total
-        # return the loss and print the calculated metrics
-        print(right)
+        # return the lossand print the calculated metrics
+
         return total_loss
         #TODO
         
@@ -161,7 +177,7 @@ class Trainer:
             # append the losses to the respective lists
             self.val_loss.append(self.val_test())
             # use the save_checkpoint function to save the model (can be restricted to epochs with improvement)
-            self.save_checkpoint(self._model.state_dict)
+            # self.save_checkpoint(epochs)
             # check whether early stopping should be performed using the early stopping criterion and stop if so
             if (counter >= self._early_stopping_patience):
                 break

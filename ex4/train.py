@@ -10,9 +10,9 @@ from sklearn.model_selection import train_test_split
 """
 hyper parameters
 """
-batch_size=50
-learning_rate=0.1
-total_epoch=200
+batch_size=2
+learning_rate=0.2
+total_epoch=2
 # test size for splitting
 
 # load the data from the csv file and perform a train-test-split
@@ -23,8 +23,12 @@ train,test = train_test_split(data,test_size=0.3)
 # TODO
 
 # set up data loading for the training and validation set each using t.utils.data.DataLoader and ChallengeDataset objects
-val_loader = t.utils.data.DataLoader(ChallengeDataset(test, 'val'), batch_size=batch_size)
-train_loader=t.utils.data.DataLoader(ChallengeDataset(train, 'val'), batch_size=batch_size)
+test_obj=ChallengeDataset(test, 'val')
+train_obj=ChallengeDataset(train, 'train')
+
+val_loader = t.utils.data.DataLoader(test_obj, batch_size=batch_size,shuffle=True)
+train_loader=t.utils.data.DataLoader(train_obj, batch_size=batch_size,shuffle=False)
+
 # TODO
 
 # create an instance of our ResNet model
@@ -43,13 +47,16 @@ choose optimizer
 opt=t.optim.Adam(resnet.parameters(),lr=learning_rate)
 
 # create an object of type Trainer and set its early stopping criterion
-trainer=Trainer(early_stopping_patience=100,model=resnet,crit=loss,optim=opt,train_dl=train_loader,val_test_dl=val_loader)
+trainer=Trainer(early_stopping_patience=1,model=resnet,crit=loss,optim=opt,train_dl=train_loader,val_test_dl=val_loader,cuda="cuda")
 # TODO
 res=[[0],[0]]
 # go, go, go... call fit on trainer
 res[1],res[0]=trainer.fit(total_epoch)
 #TODO
-
+print("train loss")
+print(res[0])
+print("val loss")
+print(res[1])
 # plot the results
 plt.plot(np.arange(len(res[0])), res[0], label='train loss')
 plt.plot(np.arange(len(res[1])), res[1], label='val loss')
