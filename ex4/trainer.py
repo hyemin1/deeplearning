@@ -20,6 +20,8 @@ class Trainer:
         self._train_dl = train_dl
         self._val_test_dl = val_test_dl
         self._cuda = cuda
+        self.avg_pred=[]
+        self.val_y=[]
 
         self._early_stopping_patience = early_stopping_patience
 
@@ -57,16 +59,13 @@ class Trainer:
         self._model.zero_grad()
         # -propagate through the network
         out = self._model(x)
-        # -calculate the loss
-        # print(y.shape)
-        # print(out.shape)
-        y=torch.argmax(y,axis=1)
-        # print(y.shape)
-        loss=self._crit(out,y)
+        predict=out.to(torch.float)
+        y=y.to(torch.float)
+
+        loss=self._crit(predict,y)
         # -compute gradient by backward propagation
         loss.backward()
         # -update weights
-        # self._crit.step()
         self._optim.step()
         # -return the loss
         return loss
@@ -80,12 +79,12 @@ class Trainer:
         """
         # predict
         # propagate through the network and calculate the loss and predictions
-        # self._crit.zero_grad()
         out = self._model(x)
-        _, predict = torch.max(out, 1)
+        predict = out.to(torch.float)
+        y = y.to(torch.float)
 
-        y = torch.argmax(y, axis=1)
-        loss = self._crit(out, y)
+
+        loss = self._crit(predict, y)
         # return the loss and the predictions
         return loss,predict
         #TODO
@@ -99,21 +98,25 @@ class Trainer:
         i=0
         cnt=0
 
-        for i,(img,label) in enumerate(self._train_dl):
+        for item in (self._train_dl):
             # transfer the batch to "cuda()" -> the gpu if a gpu is given
             """
             add cuda to use GPU
             """
+            img=item[0]
+            label=item[1]
             # perform a training step
-
             img=img.cuda()
             label=label.cuda()
 
+
             epoch_loss+=self.train_step(img,label)
-            total+=label.size(0)
-            # i+=1
+
+            total+=2 #add 2 (number of classes of prediction)
+
         # calculate the average loss for the epoch and return it
-        epoch_loss/=total
+
+        epoch_loss=epoch_loss/total
         return epoch_loss
         #TODO
     
@@ -126,35 +129,48 @@ class Trainer:
         total=0
         total_loss=0
         cnt=0
-        i=0
-        choice=torch.tensor(2)
+        tmp_pred=[]
+        tmp_label=[]
         with torch.no_grad():
             # iterate through the validation set
-            for i,(img,label) in enumerate(self._train_dl):
+            for item in (self._val_test_dl):
                 # transfer the batch to the gpu if given
                 """
                 add cuda to use GPU
                 """
+                img=item[0]
+                label=item[1]
 
                 # perform a validation step
                 img=img.cuda()
                 label=label.cuda()
                 cnt+=1
                 val_loss,out=self.val_test_step(img,label)
-                # save the predictions and the labels for each batch
-                total+=label.size(0)
-                # right+=(label==out).sum().item()
-                # choice+=out
-                total_loss+=val_loss
 
+                # save the predictions and the labels for each batch
+                total+=2
+                total_loss+=val_loss
+                tmp_pred.append(out)
+                tmp_label.append(label)
                 """
                 should add something
                 """
         # calculate the average loss and average metrics of your choice. You might want to calculate these metrics in designated functions
-        # right/=total
-        # choice/=total
-        total_loss/=total
+        # tmp_pred=tmp_pred/total
+        # tmp_label=tmp_label/total
+        tmp_pred=[x/total for x in tmp_pred]
+        tmp_label=[x/total for x in tmp_label]
+        self.avg_pred.append(tmp_pred)
+        self.val_y.append(tmp_label)
+        total_loss=total_loss/total
         # return the lossand print the calculated metrics
+        # tmp_label=tmp_label.to(torch.int)
+        # tmp_pred=tmp_pred.to(torch.int)
+
+        # print("f1 score")
+        # print((self.avg_pred))
+        # print((self.val_y))
+        # print(f1_score(y_true=tmp_label, y_pred=tmp_pred, average='micro'))
 
         return total_loss
         #TODO
@@ -166,6 +182,7 @@ class Trainer:
         self.train_loss=[]
         self.val_loss=[]
         counter=0
+        early_counter=0
         #TODO
         
         while True:
@@ -175,13 +192,18 @@ class Trainer:
             # train for a epoch and then calculate the loss and metrics on the validation set
             self.train_loss.append(self.train_epoch())
             # append the losses to the respective lists
-            self.val_loss.append(self.val_test())
+            temp=self.val_test()
+            self.val_loss.append(temp)
             # use the save_checkpoint function to save the model (can be restricted to epochs with improvement)
             # self.save_checkpoint(epochs)
             # check whether early stopping should be performed using the early stopping criterion and stop if so
-            if (counter >= self._early_stopping_patience):
+            if(temp<0.13):
+                early_counter+=1
+            if (early_counter== self._early_stopping_patience):
                 break
             counter+=1
+
+
         # return the losses for both training and validation
         return self.train_loss,self.val_loss
         #TODO

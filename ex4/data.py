@@ -28,7 +28,7 @@ class ChallengeDataset(Dataset):
         else:
             #added random transformation for dta augmentation
             self._transform = torchvision.transforms.Compose(
-                [torchvision.transforms.ToPILImage(),
+                [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(degrees=90),
                  torchvision.transforms.ToTensor(),torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
 
 
@@ -47,26 +47,11 @@ class ChallengeDataset(Dataset):
         img = self._transform(img)
 
         #get the label of the current image
-        label=np.array(self.data.iloc[index,1:],dtype='float')
+        label = np.array(self.data.iloc[index, 1:],dtype='float')
+
 
         #return image and labels
-        item=(torch.tensor(img),torch.tensor(label,dtype=torch.long))
-        # img_arr=[]
-        # label_arr=[]
-        # for it in range(0,len(self.data)):
-        #     #name of image file
-        #     rt= self.data[it].iloc[index,0]
-        #     img=imread(rt)
-        #     #RGB coloring
-        #     #apply transformation
-        #     img = skimage.color.gray2rgb(img)
-        #     img = self._transform(img)
-        #     img_arr.append(img)
-        #
-        #     #get the label of the current image
-        #     label=np.array(self.data[it].iloc[index,1:],dtype='float')
-        #     label_arr.append(label)
-        # item = (torch.tensor(img_arr), torch.tensor(label_arr))
-        # print(len(item))
+        item=(torch.tensor(img),torch.tensor(label))
+
         return item
 

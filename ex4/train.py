@@ -10,9 +10,9 @@ from sklearn.model_selection import train_test_split
 """
 hyper parameters
 """
-batch_size=2
-learning_rate=0.2
-total_epoch=2
+batch_size=5
+learning_rate=0.5
+total_epoch=7
 # test size for splitting
 
 # load the data from the csv file and perform a train-test-split
@@ -29,6 +29,8 @@ train_obj=ChallengeDataset(train, 'train')
 val_loader = t.utils.data.DataLoader(test_obj, batch_size=batch_size,shuffle=True)
 train_loader=t.utils.data.DataLoader(train_obj, batch_size=batch_size,shuffle=False)
 
+
+
 # TODO
 
 # create an instance of our ResNet model
@@ -39,15 +41,15 @@ resnet= model.ResNet()
 """
 choose loss function
 """
-loss=t.nn.CrossEntropyLoss()
+loss=t.nn.BCELoss()
 # set up the optimizer (see t.optim)
 """
 choose optimizer
 """
-opt=t.optim.Adam(resnet.parameters(),lr=learning_rate)
+opt=t.optim.SGD(resnet.parameters(),lr=learning_rate)
 
 # create an object of type Trainer and set its early stopping criterion
-trainer=Trainer(early_stopping_patience=1,model=resnet,crit=loss,optim=opt,train_dl=train_loader,val_test_dl=val_loader,cuda="cuda")
+trainer=Trainer(early_stopping_patience=3,model=resnet,crit=loss,optim=opt,train_dl=train_loader,val_test_dl=val_loader,cuda="cuda")
 # TODO
 res=[[0],[0]]
 # go, go, go... call fit on trainer
