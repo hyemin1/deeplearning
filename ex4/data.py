@@ -28,7 +28,7 @@ class ChallengeDataset(Dataset):
         else:
             #added random transformation for dta augmentation
             self._transform = torchvision.transforms.Compose(
-                [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(degrees=90),
+                [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(90),torchvision.transforms.RandomGrayscale(),torchvision.transforms.RandomVerticalFlip(),
                  torchvision.transforms.ToTensor(),torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
 
 
