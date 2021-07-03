@@ -26,7 +26,7 @@ class ChallengeDataset(Dataset):
             [torchvision.transforms.ToPILImage(),torchvision.transforms.ToTensor(),
              torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
         else:
-            #added random transformation for dta augmentation
+            #added random transformation for data augmentation
             self._transform = torchvision.transforms.Compose(
                 [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(90),torchvision.transforms.RandomGrayscale(),torchvision.transforms.RandomVerticalFlip(),
                  torchvision.transforms.ToTensor(),torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
