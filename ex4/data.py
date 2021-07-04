@@ -28,8 +28,13 @@ class ChallengeDataset(Dataset):
         else:
             #added random transformation for data augmentation
             self._transform = torchvision.transforms.Compose(
-                [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(90),torchvision.transforms.RandomGrayscale(),torchvision.transforms.RandomVerticalFlip(),
-                 torchvision.transforms.ToTensor(),torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
+                [torchvision.transforms.ToPILImage(),torchvision.transforms.RandomRotation(90),
+                 torchvision.transforms.RandomGrayscale(),
+                 torchvision.transforms.RandomVerticalFlip(),
+                 torchvision.transforms.RandomHorizontalFlip(),
+                 torchvision.transforms.RandomRotation(180),
+                 torchvision.transforms.ToTensor(),
+                 torchvision.transforms.Normalize(mean=train_mean, std=train_std)])
 
 
 
@@ -54,4 +59,5 @@ class ChallengeDataset(Dataset):
         item=(torch.tensor(img),torch.tensor(label))
 
         return item
+
 
