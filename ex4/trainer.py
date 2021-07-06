@@ -88,7 +88,7 @@ class Trainer:
     def train_epoch(self):
         # set training mode
         self._model.train()
-        # iterate through the training set 
+        # iterate through the training set
         epoch_loss = 0
         total = 0
 
@@ -169,13 +169,15 @@ class Trainer:
         self.val_loss = []
         counter = 0
         early_counter = 0
+        self.lowest_loss=1
 
         while True:
             # stop by epoch number
-            if (counter >= (epochs - 5)):
-                self.save_checkpoint(counter)
             if (counter == epochs):
                 break
+            if (counter %20==0 or counter == epochs-1):
+                self.save_checkpoint(counter)
+
             # train for a epoch and then calculate the loss and metrics on the validation set
             self.train_loss.append(self.train_epoch())
             # append the losses to the respective lists
@@ -185,7 +187,9 @@ class Trainer:
             # if (counter%10==0):
             #     self.save_checkpoint(counter)
             # check whether early stopping should be performed using the early stopping criterion and stop if so
-            if (temp < 0.13):
+            if(temp<self.lowest_loss):
+                self.lowest_loss=temp
+            elif (temp>self.lowest_loss):
                 early_counter += 1
             if (early_counter == self._early_stopping_patience):
                 break
