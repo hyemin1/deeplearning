@@ -43,8 +43,7 @@ loss=t.nn.BCELoss()
 """
 choose optimizer
 """
-# opt=t.optim.SGD(resnet.parameters(),lr=learning_rate)
-# opt=t.optim.SGD(resnet.parameters(),lr=learning_rate,momentum=0.9)
+
 opt=t.optim.Adam(resnet.parameters(),lr=learning_rate)
 # create an object of type Trainer and set its early stopping criterion
 trainer=Trainer(early_stopping_patience=10,model=resnet,crit=loss,optim=opt,train_dl=train_loader,val_test_dl=val_loader,cuda=True)
@@ -59,6 +58,3 @@ plt.yscale('log')
 plt.legend()
 plt.savefig('losses.png')
 
-# for epoch in range(0,total_epoch%5):
-#     trainer.restore_checkpoint(epoch)
-#     trainer.save_onnx('checkpoint_{:03d}.onnx'.format(epoch))
