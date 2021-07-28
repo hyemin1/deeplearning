@@ -11,18 +11,18 @@ ex0- Numpy warm up
 
 
 ex1-Basic Framework
-Layer: Fully Connected Layer, Base
-Activation Function: ReLU
-Loss: Cross Entropy Loss with Softmax Function
-Optimizer: Stochastic Gradient Descent(SCD)
+- Layer: Fully Connected Layer, Base
+- Activation Function: ReLU
+- Loss: Cross Entropy Loss with Softmax Function
+- Optimizer: Stochastic Gradient Descent(SCD)
 
 
 ex2-CNN
-Layer:Convolutional Neural Network(CNN), Flatten, FC, Pooling, Base
-Initializer: Constant, UniformRandom, Xavier, He
-Optimizer: SGD With Momentom, Adam
-Activation Function: ReLU
-Loss: Cross Entropy Loss with Softmax Function
+- Layer:Convolutional Neural Network(CNN), Flatten, FC, Pooling, Base
+- Initializer: Constant, UniformRandom, Xavier, He
+- Optimizer: SGD With Momentom, Adam
+- Activation Function: ReLU
+- Loss: Cross Entropy Loss with Softmax Function
 
 ex3-Regularization, RNN
 Layer:FC,Recurrent Neural Network(RNN),Pooling,Flatten,Base
