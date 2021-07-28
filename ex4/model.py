@@ -45,10 +45,6 @@ class ResNet(torch.nn.Module):
         self.bn = torch.nn.BatchNorm2d(64)
         self.relu = torch.nn.ReLU(inplace=True)
         self.max_pool=torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        # self.layer1 = self.block_layer(64,64, layers)
-        # self.layer2 = self.block_layer(64,128, layers, 2)
-        # self.layer3 = self.block_layer(128,256, layers, 2)
-        # self.layer4 = self.block_layer(256,512, layers, 2)
         self.layer1=ResidualBlock(64,64)
         self.layer2 = ResidualBlock(64,128,2)
         self.layer3 = ResidualBlock(128,256,2)
@@ -57,15 +53,9 @@ class ResNet(torch.nn.Module):
         self.fc = torch.nn.Linear(512, 2)
         self.sig=torch.nn.Sigmoid()
 
-    # def block_layer(self, in_channels,out_channels, num_blocks, stride=1):
-    #     blocks = []
-    #     blocks.append(ResidualBlock(in_channels, out_channels, stride))
-    #     for i in range(1, num_blocks):
-    #         blocks.append(ResidualBlock(out_channels, out_channels))
-    #     return torch.nn.Sequential(*blocks)
 
     def forward(self, x):
-        # x=x[None,...]
+
         if(len(x.shape)==3):
             x=x[None,...]
         out = self.conv(x)
