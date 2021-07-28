@@ -25,27 +25,27 @@ ex2-CNN
 - Loss: Cross Entropy Loss with Softmax Function
 
 ex3-Regularization, RNN
-Layer:FC,Recurrent Neural Network(RNN),Pooling,Flatten,Base
-Regularization(layer):Drop Out,BatchNormalization
-Regularization(Constraints): L1 Regularizer, L2 Regularizer
-Activation Functions: ReLU,Sogmoid,TanH
-Loss:Cross Entropy Loss with Softmax Function
+- Layer:FC,Recurrent Neural Network(RNN),Pooling,Flatten,Base
+- Regularization(layer):Drop Out,BatchNormalization
+- Regularization(Constraints): L1 Regularizer, L2 Regularizer
+- Activation Functions: ReLU,Sogmoid,TanH
+- Loss:Cross Entropy Loss with Softmax Function
 
 ex4-PyTorch Challenge
 - train the ResNet using pytorch to check the cracks and inactive regions in solar pannels.Use GPU to train the model.
-Architecture: ResNet
-batch size: 36
-learning rate: 0.00007
-total epoch:200
-test size:0.2
-early stopping patience: 20
-Loss: BCE Loss 
-Optimizer: Adam
+- Architecture: ResNet
+- batch size: 36
+- learning rate: 0.00007
+- total epoch:200
+- test size:0.2
+- early stopping patience: 20
+- Loss: BCE Loss 
+- Optimizer: Adam
 
 RESULT
-f1 score of cracks: 0.63636
-f1 score of inactive regions: 0.76923
-f1 mean:	0.70280
+- f1 score of cracks: 0.63636
+- f1 score of inactive regions: 0.76923
+- f1 mean:	0.70280
 
 
 
