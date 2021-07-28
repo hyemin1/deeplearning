@@ -183,9 +183,7 @@ class Trainer:
             # append the losses to the respective lists
             temp = self.val_test()
             self.val_loss.append(temp)
-            # use the save_checkpoint function to save the model (can be restricted to epochs with improvement)
-            # if (counter%10==0):
-            #     self.save_checkpoint(counter)
+
             # check whether early stopping should be performed using the early stopping criterion and stop if so
             if(temp<self.lowest_loss):
                 self.lowest_loss=temp
